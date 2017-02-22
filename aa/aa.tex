@@ -908,14 +908,6 @@ Transport coefficient ($\delta_{tran,s}$) & Figure \ref{fig:aa-vot} & Figure \re
 \end{tabular}
 \end{table}
 
-% Labeled as Table 6-7 Value of Time based on Wage Rate and Business Travel share of Trips, but actually a figure
-\begin{figure}
-\centering
-\includegraphics[scale=0.75]{aa/aa-value-of-time}
-\caption{Value of time based upon wage rate and business travel share of trips}
-\label{fig:aa-vot}
-\end{figure}
-
 For residential space, residential buying size terms are also used ($Size_{b,c,k}$ in equation \ref{eq:6.17}). These buying size terms are calculated as the quantity of space type $c$ in zone $k$ divided by the total of all residential space types in zone $k$. (All other buying size terms and selling size terms are left at their default value of 1.0).
 
 Buying and selling composite utility includes allowance for factor and offset adjustments. All factor adjustments, $\phi_{s,c,a}$, are set to 1 and the offset adjustments, $USellRef_{c,a}$ and $UBuyRef_{c,a}$ are set to zero (Table \ref{tab:aa-household-lifestyles}). It is expected that in some cases, as calibration progresses, the factor adjustment may be set to 0 to completely remove the effect of individual buying and selling composite utilities on production utilities and thus on location utilities.
@@ -925,7 +917,15 @@ Transport cost coefficients weigh the relative value of time and distance in the
 
 The transport coefficient is essentially the inverse of the economic value per trip, allowing the time and distance parameters to be in units of cost per vehicle trip. These costs take into account variations in commodity value (labor or goods) and vehicle occupancy (tons or persons per vehicle). Goods transport costs are incurred at the production end (buying), while services (management and other) and labor transport costs are born at the consumption end (selling) of the exchange. Floorspace is non-transportable, so there are no transport costs (coefficients set to 1 or 0). These parameters are defined in the CommoditiesI.csv AA input file.
 
-Freight commodity time and cost rates were calculated primarily with data from a 2000 WSDOT statewide modeling effort. In many cases, STCC commodity data was converted into the SCTG classification used in AA, weighted by 1999 IMPLAN production data (Make value). These transport costs assume mode/vehicle operating costs and endogenized other cost, wage and mode split components. The transport coefficients are calculated as follows. Figure \ref{fig:aa-vot} shows the relationship assumed to calculate value of time for service-related trips. All monetary values have been converted into 2009 dollars. Note: In some cases final parameter values shown in Table \ref{table_6-10} were modified during calibration and do not follow these formula.
+Freight commodity time and cost rates were calculated primarily with data from a 2000 WSDOT statewide modeling effort. In many cases, STCC commodity data was converted into the SCTG classification used in AA, weighted by 1999 IMPLAN production data (make value). These transport costs assume mode/vehicle operating costs and endogenized other cost, wage and mode split components. The transport coefficients are calculated as follows. Figure \ref{fig:aa-vot} shows the relationship assumed to calculate value of time for service-related trips. All monetary values have been converted into 2009 dollars. Note: In some cases final parameter values shown in Table \ref{tab:aa-transport-coefficients} were modified during calibration and do not follow these formula.
+
+% Labeled as Table 6-7 Value of Time based on Wage Rate and Business Travel share of Trips, but actually a figure
+\begin{figure}
+\centering
+\includegraphics[scale=0.75]{aa/revised-vot-shares.pdf}
+\caption{Value of time based upon wage rate and business travel share of trips}
+\label{fig:aa-vot}
+\end{figure}
 
 \vspace{10pt}
 \noindent For goods:
@@ -981,7 +981,7 @@ average 1.5 [user-input]
 
 \subsubsection{Buying and selling price sensitivity coefficients}
 
-The coefficients for the sensitivity to price when buying or selling ($\delta_{price,s}, \delta_{price,b}$), found in the buying and selling allocation utility functions, are set to 1 for all commodities, positive when selling and negative when buying. These are shown in Table \ref{table_6-8}. Thus, the utility function is in units of equivalent 2009 dollars.
+The coefficients for the sensitivity to price when buying or selling ($\delta_{price,s}, \delta_{price,b}$), found in the buying and selling allocation utility functions, are set to 1 for all commodities, positive when selling and negative when buying. These are shown in Table \ref{tab:aa-transport-coefficients}. Thus, the utility function is in units of equivalent 2009 dollars.
 
 % The transport coefficients table (Table 6-8 in original manuscript) is too large to fit in either landscape or portrait
 % mode, even with footnote size text. So put in a placeholder for it, and we'll manually insert the oversized page in the

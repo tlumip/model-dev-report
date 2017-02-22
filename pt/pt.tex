@@ -217,7 +217,7 @@ These PT SDT and LDT components are detailed in the remainder of this section.
 Initial aggregate accessibilities are calculated and used by both SDT and LDT components. Tour mode choice logsums and tour destination choice logsums are used as measures of travel accessibility by the LDT and the SDT components of the PT module as well as the AA module. The destination choice logsum represents the overall ability of travelers to access any destination. The logsums are important to PT LDT because they allow the models to capture the effect that people who have access to many destinations within a short distance are less likely to need to make long distance trips. Within SDT, these accessibilities influence the day pattern model, the auto ownership model, the tour destination choice model and the tour scheduling model. They are referred to as aggregate accessibilities because they are a function of the origin and destination zone attributes only. The logsums are calculated in the same fashion as the utilities for the SDT tour mode choice and destination choice model, but excluding all terms that are person-related. The mode choice logsums are however segmented by household market.\footnote{Refer to Sections \ref{sec:sdt-primary-tour-destination} and \ref{sec:sdt-tour-mode-choice} for a detailed description of the PT SDT tour mode choice and destination choice models.}
 
 \subsection{LDT binary choice of travel}
-Urban modelers often complain that travel is difficult to predict because it planned on a time scale longer than one day. This is especially true of long-distance travel. To capture this longer-term planning, long-distance tours in LDT are generated over a two-week period, rather than over a single day. The binary choice of travel model, predicts the probability of engaging in each type of long-distance travel during a two-week period. Note that the binary choice of travel model predicts the presence of travel for each purpose (Table \ref{idunno}) during the time window, not the quantity. The presence could be part of a tour (i.e., departing during the travel window and returning at a later date), it could be a complete tour or it could be multiple tours. Also, an individual can have travel for multiple purposes occur during the two-week window. Given the presence of travel, the LDT tour pattern model will determine what actually happens on the model day. The variables in the linear utility for the binary choice of travel for each purpose include the following:
+Urban modelers often complain that travel is difficult to predict because it planned on a time scale longer than one day. This is especially true of long-distance travel. To capture this longer-term planning, long-distance tours in LDT are generated over a two-week period, rather than over a single day. The binary choice of travel model, predicts the probability of engaging in each type of long-distance travel during a two-week period. Note that the binary choice of travel model predicts the presence of travel for each purpose (Table \ref{tab:ldt-trip-purposes}) during the time window, not the quantity. The presence could be part of a tour (i.e., departing during the travel window and returning at a later date), it could be a complete tour or it could be multiple tours. Also, an individual can have travel for multiple purposes occur during the two-week window. Given the presence of travel, the LDT tour pattern model will determine what actually happens on the model day. The variables in the linear utility for the binary choice of travel for each purpose include the following:
 \begin{itemize}
 \item Household attributes (workers, autos, household size, household income, presence of students, single family home)
 \item Person attributes (worker occupation, student, sex, age)
@@ -460,11 +460,13 @@ This model forecasts the duration of the three activities that comprise a work b
 The duration of the primary activity of the work-based subtour is constrained by the total duration of the tour, as follows:
 \begin{equation}
 PctDuration_{primary} = Duration_{primary} / Duration_{tour}
+\label{eq:pt-work-primary-duration}
 \end{equation}
 
 \noindent The duration of the first at-work activity duration is constrained by the total duration of the work activity, as follows:
 \begin{equation}
 PctDuration_{first at-work} = Duration_{first at-work} / Duration_{work}
+\label{eq:pt-at-work-duration}
 \end{equation}
 
 \noindent PT SDT samples from the frequency tables to obtain the percent duration of the primary and first at-work activities. Given that the duration of the tour is known (exclusive of intermediate stop durations, if present), then the primary and first-at work durations are obtained by solving the equations above and the second at-work duration is obtained as:
@@ -570,27 +572,25 @@ Because of the computational requirements of the PT module to micro-simulate a f
 
 \noindent The PTMasterTask, the LongDistanceTask, and the file writer tasks each occupy their own node while the remaining five nodes each have an MC and a DCLogusmCalculator task and multiple MicroSimulationWorkerTasks running on them. 
 
-The PTMasterTask first instructs the MCLogsumCalculatorTasks to calculate a matrix of aggregate mode choice logsums. Although the full mode choice model is applied later, PT pre-calculates an aggregate set of mode choice logsums, which only depend on the activity purpose and market segment. The PTMasterTask sends an activity purpose (Table \ref{tab:sdt-tour-def}) and a market segment (Table \ref{tab:sdt-market-segments}) to each CalculatorTask. The CalculatorTask calculates the logsums for each alpha zone and stores the values in a matrix. The matrices are then passed to the MCWriterTask, which writes the mode choice logsums out to disk in compressed matrix format (Figure \ref{fig:daf-process}) for use later by PT (alpha zone) as well as by the AA module (beta zone). 
+The PTMasterTask first instructs the MCLogsumCalculatorTasks to calculate a matrix of aggregate mode choice logsums. Although the full mode choice model is applied later, PT pre-calculates an aggregate set of mode choice logsums, which only depend on the activity purpose and market segment. The PTMasterTask sends an activity purpose (Table \ref{tab:sdt-tour-def}) and a market segment (Table \ref{tab:sdt-market-segments}) to each CalculatorTask. The CalculatorTask calculates the logsums for each alpha zone and stores the values in a matrix. The matrices are then passed to the MCWriterTask, which writes the mode choice logsums out to disk in compressed matrix format (Figure \ref{fig:daf-mc-logsums}) for use later by PT (alpha zone) as well as by the AA module (beta zone). 
 
 \begin{figure}
 \centering
-\includegraphics[width=5.2in]{pt/figure75}
+\includegraphics[width=5in]{pt/figure75}
 \caption{DAF process to create mode choice logsums}
-\label{fig:daf-process}
+\label{fig:daf-mc-logsums}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=5in]{pt/figure76}
+\caption{DAF process to calculate workplace locations}
+\label{fig:daf-workplace-location}
 \end{figure}
 
 Next the MasterTask assigns each MicroSimulationWorkerTask a set of households to apply the AutoOwnership model to. The full set of households is divided evenly amongst the set of worker tasks. The results are returned to the MasterTask via an array indexed by household ID number. 
 
-Once all the households have been processed, the full array of auto-ownership results is sent back to the Workers so that it can be used in the workplace location model. For this model, the MasterTask assigns each MicroSimulationWorkerTask a set of persons to apply the workplace location model to. The results are sent back to the MasterTask as a mapping between the hhId\_personId (key) and the workplace TAZ (value), as shown in Figure \ref{fig:daf-workplace}. In addition, each worker task sends back a summary of its person's employment by occupation by zone to the MasterTask, where it is tabulated and written to disk as Employment.csv. 
-
-% What was formerly Figure 7.5 doesn't appear to be referenced in the text, so
-% we'll pull it from the paper
-%\begin{figure}
-%\centering
-%\includegraphics[width=5.2in]{pt/figure76}
-%\caption{DAF process to calculate workplace locations}
-%\label{fig:daf-workplace}
-%\end{figure}
+Once all the households have been processed, the full array of auto-ownership results is sent back to the Workers so that it can be used in the workplace location model. For this model, the MasterTask assigns each MicroSimulationWorkerTask a set of persons to apply the workplace location model to. The results are sent back to the MasterTask as a mapping between the hhId\_personId (key) and the workplace TAZ (value), as shown in Figure \ref{fig:daf-workplace-location}. In addition, each worker task sends back a summary of its person's employment by occupation by zone to the MasterTask, where it is tabulated and written to disk as Employment.csv. 
 
 After the workplace location model is finished, the destination choice logsums can be calculated. The work is divided up into nine segments so that each DCLogsumCalculatorTask does at least one segment. Before beginning the calculation, each CalculatorTask reads in the latest Employment.csv file and updates their TAZ objects that are used in the size term calculations. The results are sent to the DCWriterTask which creates a table and when the work is completed is written out to disk to be used in future calculations [dclogsums.csv]. 
 
@@ -702,7 +702,7 @@ The only parameter in the SDT workplace location choice model discussed in \S\re
 \subsection{SDT day-pattern model estimation}\label{sec:pt-day-pattern-estimation}
 The estimation results for the five day pattern models discussed in \S\ref{sec:sdt-day-pattern} are summarized in Table \ref{tab:pt-day-pattern-summary}. The detailed listings of variables and parameters estimates are included in Appendix \ref{app:day-pattern-models} (page \pageref{app:day-pattern-models}). 
 
-Among the most powerful explanatory variables across all models are number of tours, presence and/or number of intermediate stops, and number of activities of each purpose. As expected, as the day pattern complexity increases, with complexity measured as either more tours, more activities or more intermediate stops on tours, the less likely the pattern is to be chosen. The models also show that people manage day pattern complexity by trading off number of intermediate stops against number of tours, as shown by the negative coefficients on the product of intermediate stops and tours (see Tables \ref{idunno} and \ref{tab:pt-nonworker-person-day-pattern}). % and the negative coefficient on the product of stops on work tours and number of non-work tours (see Table \ref{idunno}).
+Among the most powerful explanatory variables across all models are number of tours, presence and/or number of intermediate stops, and number of activities of each purpose. As expected, as the day pattern complexity increases, with complexity measured as either more tours, more activities or more intermediate stops on tours, the less likely the pattern is to be chosen. The models also show that people manage day pattern complexity by trading off number of intermediate stops against number of tours, as shown by the negative coefficients on the product of intermediate stops and tours (see Tables \ref{tab:pt-worker-day-pattern} and \ref{tab:pt-nonworker-person-day-pattern}). % and the negative coefficient on the product of stops on work tours and number of non-work tours (see Table \ref{idunno}).
 
 \begin{table}
 \centering
@@ -853,7 +853,7 @@ For calibration, the trip mode choice model's alternative-specific constants are
 \input{pt/tables/sdt-mode-choice-parameters.tex}  % 7-38
  
 \subsection{SDT work-based activity duration model estimation}
-The empirical distributions computed for the SDT work-based activity duration model functions described by equations \ref{idunno} and \ref{idunno} in \S\ref{sec:sdt-trip-mode-choice} are shown below. These functions were obtained from the distribution of activity durations observed in the Oregon Home Interview Survey data. The primary work activity observed frequency distribution (PctDurationprimary) and its observed cumulative distribution functions are shown in Figures \ref{fig:pt-work-based-activity-duration-distributions}(a) and (b), respectively. The corresponding plots for the first at-work activity (PctDurationfirst at-work) are shown in Figures \ref{fig:pt-work-based-activity-duration-distributions}(c) and (d), respectively. 
+The empirical distributions computed for the SDT work-based activity duration model functions described by equations \ref{eq:pt-work-primary-duration} and \ref{eq:pt-at-work-duration} in \S\ref{sec:sdt-trip-mode-choice} are shown below. These functions were obtained from the distribution of activity durations observed in the Oregon Home Interview Survey data. The primary work activity observed frequency distribution (PctDurationprimary) and its observed cumulative distribution functions are shown in Figures \ref{fig:pt-work-based-activity-duration-distributions}(a) and (b), respectively. The corresponding plots for the first at-work activity (PctDurationfirst at-work) are shown in Figures \ref{fig:pt-work-based-activity-duration-distributions}(c) and (d), respectively. 
 
 % Combine Figures 7.7 to 7.10 into single figure
 \begin{sidewaysfigure}
@@ -1272,7 +1272,7 @@ $>$50 miles &  & 257,152 &  &  \\
 \end{table}
 
 \subsubsection{Scheduling}
-The scheduling model draws from observed frequency distributions for beginning tours and ending tours, which is assumed to be the same in Oregon as in Ohio. No calibration was required for the departure time of beginning tours or the arrival time of ending tours, shown in Figure \ref{figure7.13}. The modeled and observed departure times, as well as arrival times and durations for the complete tour scheduling model, are shown in Figures \ref{fig:pt-tour-departure-arrival-times} and \ref{fig:pt-complete-tours-duration}.
+The scheduling model draws from observed frequency distributions for beginning tours and ending tours, which is assumed to be the same in Oregon as in Ohio. No calibration was required for the departure time of beginning tours or the arrival time of ending tours. The modeled and observed departure times, as well as arrival times and durations for the complete tour scheduling model, are shown in Figures \ref{fig:pt-tour-departure-arrival-times} and \ref{fig:pt-complete-tours-duration}.
 
 \begin{sidewaysfigure}  % Figures 7.24 and 7.25
 \centering
