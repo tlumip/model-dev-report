@@ -1,0 +1,44 @@
+\begin{table}[!t]
+\centering
+\caption{Intermediate stop duration model parameters}
+\label{tab:pt-intermediate-stop-duration-models}
+\small
+\begin{tabular}{l *7{r}}
+\hline
+\multirow{2}{*}{Variable} & \multicolumn{7}{c}{Tour Purpose} \\ \cline{2-8}
+ & Work & School & College & Shop & Recreation & Other & Work-based \\
+\hline
+Outbound stop dummy & -0.8000 & -1.2100 & -0.6700 & 0.0900 & -0.0900 & 0.0200 & -1.0300 \\
+\gray Tours starts in the morning & -0.6233 &  &  & 0.1520 &  &  & -0.6233 \\
+Adult worker dummy &  & 0.3260 & 0.3260 &  &  &  &  \\
+{\vspace{-9pt}} \\
+\textit{Number of daily tours} \\
+\gray ~~~Two &  & -0.2562 & -0.2562 &  & -0.2240 &  &  \\
+~~~Three &  &  &  & -0.2124 & -0.4060 &  &  \\
+\gray ~~~Three or more &  & -0.4674 & -0.4674 &  &  &  &  \\
+~~~Four or more &  &  &  & -0.4403 & -0.7580 &  &  \\
+\gray Number of daily stops is 2+ &  &  &  & -0.2975 &  &  &  \\
+{\vspace{-9pt}} \\
+\textit{Number of daily activities} \\
+\gray ~~~Six or seven & -0.1358 &  &  &  &  &  & -0.1358 \\
+~~~Six or more &  &  &  &  &  & -0.2231 &  \\
+\gray ~~~Eight or more & -0.1640 &  &  &  &  &  &  \\
+Presence of shop stops & -0.4323 & -0.5873 & -0.5873 & -0.1710 &  &  & -0.4323 \\
+\gray Deviation distance & 0.0086 & 0.0067 & 0.0067 & 0.0069 & 0.0086 & 0.0099 & 0.0086 \\
+{\vspace{-9pt}} \\ 
+\textit{Constants} \\
+\gray ~~~Less than 1 hour & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+~~~One hour & -0.1818 & -0.4166 & -0.8757 & -1.0337 & -0.4518 & -1.4266 & -0.2276 \\
+\gray ~~~Two hours & -0.0734 & -0.4016 & -0.5255 & -1.4073 & -1.2283 & -2.2712 & -0.1220 \\
+~~~Three hours & 0.1225 & -1.1849 & -1.3305 & -1.7416 & -1.8994 & -2.6793 & 0.0413 \\
+\gray ~~~Four hours & 0.5384 & -1.8436 & -1.7802 & -1.8483 & -2.6073 & -3.1561 & -0.0673 \\
+~~~Five hours & 0.2393 & -2.0865 & -3.2447 & -1.4063 & -3.9223 & -5.1640 & -0.3256 \\
+\gray ~~~Six hours & 1.1194 & -2.0855 & -1.9475 & -1.6598 & -1.7697 & -8.3657 & -0.6957 \\
+~~~Seven hours & 0.7000 & -2.2855 & -2.1475 & -1.8598 & -1.9697 & -8.8657 & -0.8957 \\
+\gray ~~~Eight hours & 0.6000 & -2.4855 & -2.3475 & -2.0598 & -2.1697 & -9.3657 & -1.0957 \\
+~~~Nine hours & 0.5000 & -2.6855 & -2.5475 & -2.2598 & -2.3697 & -9.8657 & -1.2957 \\
+\gray ~~~Ten hours & 0.2000 & -2.8855 & -2.7475 & -2.4598 & -2.5697 & -10.3657 & -1.4957 \\
+~~~Eleven hours & 0.1000 & -3.0855 & -2.9475 & -2.6598 & -2.7697 & -10.8657 & -1.6957 \\
+\hline
+\end{tabular}
+\end{table}

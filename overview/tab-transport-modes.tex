@@ -1,0 +1,31 @@
+\begin{sidewaystable}
+\centering
+\caption{Transport modes and vehicle types}\label{tab:transport-modes}
+\begin{tabular}{|l|l|l|l|c|}
+\hline
+Type & Code & Trip mode & Definition & Component(s) \\
+\hline
+Person & DA & Drive alone & Single-occupant auto & SDT, LDT \\
+\gray \cellcolor{white}travel & SR2 & Shared ride 2 & Two-occupant auto & SDT, LDT \\
+ & SR3P & Shared ride 3+ & Three or more occupant auto & SDT, LDT \\
+\gray \cellcolor{white}& WALK & Walk & Walk & SDT \\
+ & BIKE & Bicycle & Bicycle & SDT \\
+\gray \cellcolor{white}& SCHOOL\_BUS & School bus & School bus (not assigned) & SDT \\
+ & TRANSIT\_WALK & Walk to transit & Walk-access transit & LDT \\
+\gray \cellcolor{white}& TRANSIT\_DRIVE & Drive to transit & Drive-access transit & LDT \\
+ & AIR & Drive to air & Drive-access air travel within modeled area & LDT \\
+\gray \cellcolor{white}& HSR\_DRIVE & Drive to HSR & Drive-access intercity rail & LDT \\
+ & HSR\_WALK & Walk to HSR & Walk-access to intercity rail & LDT \\
+\hline
+\gray \cellcolor{white}Freight & TRK1 & Truck type 1 & $<$34,000 lbs. (likely single-unit) & CT, ET \\
+ & TRK2 & Truck type 2 & 34,000--64,000 lbs. & CT, ET \\
+\gray \cellcolor{white}& TRK3 & Truck type 3 & 64,000--80,000 lbs. (articulated) & CT, ET \\
+ & TRK4 & Truck type 4 & 80,000--105,500 lbs. (articulated) & CT, ET \\
+\gray \cellcolor{white}& TRK5 & Truck type 5 & $>$105,500 lbs. (articulated) & CT, ET \\
+ & SAA & Air freight & Air freight (not assigned) & \\
+\gray \cellcolor{white}& SRR & Rail freight & Rail freight (not assigned) & \\
+ & SWA & Waterborne freight & Waterborne freight (not assigned) & \\
+\gray \cellcolor{white}& SPA & Pipeline & Pipeline freight (not assigned) & \\
+\hline
+\end{tabular}
+\end{sidewaystable}

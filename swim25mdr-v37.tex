@@ -1,0 +1,82 @@
+% We can use 11pt to achieve smaller headings than we'd get with 12pt
+\documentclass[letter,11pt]{book}
+\usepackage[margin=1in]{geometry}
+\usepackage{mathptmx}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{url}
+\usepackage{wrapfig}
+\usepackage{threeparttable}
+\usepackage[table]{xcolor}
+\usepackage{multirow}
+\usepackage{lscape, longtable}
+\usepackage{hanging}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{float, subfig}  % Added for mutiple images per figure
+
+%\usepackage[inline]{showlabels}  % Shows labels
+
+\raggedbottom
+\usepackage[bottom]{footmisc}
+
+% Try to prevent footnotes from spanning multiple pages
+\interfootnotelinepenalty=10000
+% Add some breathing room for footnotes
+\addtolength{\skip\footins}{3mm}
+% Reduce the spacing in align environment so that row spacing looks like rest of text
+\setlength{\jot}{-0.01pt}
+% longtable inexplicably has a four-inch caption width by default, which we need to change
+\setlength{\LTcapwidth}{6.25in}
+% Define shading for alternating table rows
+\newcommand{\gray}{\rowcolor[gray]{.95}}
+% Define new column types for tables that use ragged edges (looks better!)
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+
+\title{SWIM Version 2.5 Model Development Report}
+\author{\vspace{10pt}Edited by Rick Donnelly\\WSP Parsons Brinckerhoff, Inc.\\ECONorthwest\\HBA Specto Incorporated\\Resource Systems Group, Inc.}
+\date{\vspace{24pt} \today}
+
+\begin{document}
+\fontsize{12}{14.5}\rm
+\setlength{\bibsep}{0pt}
+\bibliographystyle{agsm}
+% These parameters initially set to 300 but were ineffective at that level
+\widowpenalty=10000    
+\clubpenalty=10000
+
+\maketitle
+\pagestyle{empty}
+
+\frontmatter
+\pagestyle{headings}
+%\include{preface/preface}
+\tableofcontents
+\listoffigures
+\listoftables
+%{\listoffigures \listoftables \let\cleardoublepage\clearpage \include{abbreviations}}
+
+\mainmatter
+%\definecolor{whitesmoke}{RGB}{245,245,245}
+%\definecolor{paleyellow}{RGB}{255,255,235}
+\setlength\extrarowheight{2pt}
+\include{summary/executive-summary}
+\include{overview/system-overview}
+\include{ned/ned}
+\include{spg/spg}
+\include{ald/ald}
+\include{aa/aa}
+\include{pt/pt}
+\include{ct/ct}
+
+%\backmatter
+\bibliography{devguide}
+
+\appendix
+\include{appendices/appendix-a}
+\include{appendices/appendix-b}
+
+\end{document}

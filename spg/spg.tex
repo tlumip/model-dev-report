@@ -1,0 +1,597 @@
+\chapter{Synthetic Population Generator (SPG) Module}\label{sec:spg-chapter}
+In each year, the Synthetic Population Generator (SPG) Module generates a synthetic population consisting of a set of PUMS household records. In aggregate the resulting PUMS records conform to model-wide workers per household and age distributions and a set of model-wide employment by industry forecast determined by the NED module. Each household is assigned a home location consistent with alpha zone labor production (i.e., the home end of the labor flow in dollars) by occupation and household category (i.e., household income and size) determined by the AA module. The output produced by the SPG module is a synthetic population of persons and households with PUMS attributes and assigned a home alpha zone, in the PUMS file format. Later in the same model year, PT adjusts and adds to the Synthetic population attributes produced by SPG.
+
+\section{Theoretical Basis}
+The SPG Module uses a two-stage procedure, referred to as SPG1 and SPG2 to generate a synthetic population and to determine the alpha zone home locations for each household, respectively. The SPG1 procedure begins with the full set of PUMS records where the PUMS sample weights are adjusted using a table balancing methodology. The rows of the table consist of all the PUMS household records for the PUMAs covering the study area. The columns in the table correspond to the constraints to which the synthetic population is to conform; i.e. one column for each industry employment category (NED module constraint) and one column for each worker per household category and age group (exogenous constraint). The cell values in the table indicate the number of employed persons in each industry and age group for the household and which number of workers per household category the household record belongs. The table balancing procedure determines weights (i.e., expansion factors) for each PUMS household record so that when final weights have been determined, the weighted PUMS records conform to all the specified model-wide constraints, including NED regional employment totals by industry and model-wide households by workers per household and age categories. 
+
+Once this weighted set of PUMS households is determined, SPG2 allocates each individual household to an alpha zone, respecting labor flow constraints from AA in the form of dollars of labor production by occupation and alpha zone and total households by household category by alpha zone.\footnote{AA operates at the beta zone level. A post-processing method disaggregates elements of the labor flows to alpha zones, based on endogenous land use inventory. This process is discussed in \S\ref{sec:aa-p-processor}.}
+
+The two allocation procedures, generating the initial weight or count of each PUMS household record and allocating those households to alpha zones, are referred to as modules SPG1 and SPG2, respectively. SPG1 is a deterministic table balancing process, while SPG2 is a stochastic allocation of home location. The development of SPG draws from previous work by \citet{beckman96}, and code and notes shared by Mark Bradley from his work on a synthetic population generator for the Portland region.
+
+\section{Quantity Definitions and Categories}
+SPG1 operates at a model-wide level, while SPG2 operates at an alpha zone level. SPG1 takes a count of employees in aggregated industry sectors from the NED module to constrain the set of households generated. Since SPG uses US Census PUMS data, its sectors must be defined using Census categories. 
+
+Two correspondence files (acs\_occupation\_2005\_2009.csv and pums\_to\_split\_industry.csv) map the PUMS industries and occupations to SWIM fully-split industries and occupations (previously noted in Tables \ref{tab:activity-industry} and \ref{tab:service-categories} on pages \pageref{tab:activity-industry} and \pageref{tab:service-categories}, respectively). Both fields are included in the resulting synthetic population files. This file also provides default values for industry and occupation based on most probable coding from the other PUMS fields, for records where PUMS had missing values.
+
+The output of the SPG module is a synthetic population, written as a pair of files in PUMS file format:
+\begin{itemize}
+\item A SynPopH.csv file with household attributes
+\item A corresponding SynPopP.csvfile with person attributes
+\end{itemize}
+
+\noindent The attributes of these files were shown previously in Figure \ref{fig:synthetic-attributes} (page \pageref{fig:synthetic-attributes}). Note that the original PUMS ID number (HH+Person), although not currently retained, could be added to allow linkage back to further household and person attributes if desired. 
+
+\section{Component Models}
+
+The SPG Module works in two stages, identified as SPG1 and SPG2. The SPG1 module determines a set of households in the model area consistent with the total employment by industry forecast by the NED module and the pre-specified distribution of households by number of workers per household. The number of total regional households by household size and household income categories, determined by the SPG1 module, is read as input by the AA module.
+
+The SPG2 module reads labor dollars of production by alpha zone and number of households by (household size and household income) category by alpha zone information from the AA module as well as the set of PUMS household and person records as determined by SPG1. The zonal labor dollars of production are used to calculate probability distributions that determine the allocation of household records to home alpha zones. These components and their subtasks listed below are detailed in the remainder of this section:
+\begin{itemize}
+\item Population synthesis using a table balancing procedure (SPG1)
+\item Household zone-level assignment (SPG2)
+\end{itemize}
+
+\noindent It should be noted that some information associated with the original PUMS record sample is updated by values calculated endogenously through the operation of the SWIM2module. SPG adds calculated fields to the SynPop files to match SWIM2 industry and occupation categories. Additionally, PT assigns a workplace location (based on the work end of the same AA labor flows) and updates the auto ownership information and adjusts other minor attributes. These updated values are retained in the personData.csv and householdData.csv files (see Figure \ref{fig:synthetic-attributes}) and the original SPG-generated synthetic population files are not updated. 
+
+\subsection{Population Synthesis (SPG1)}
+The NED module determines the total employment by industry for the entire model area.\footnote{The NED module produced population consistent with its employment estimates, but this is not used in subsequent SWIM2 modules. Future updates could constrain SPG to this population by matching absolute population by age, rather than age distributions.} The SPG1 module is intended to produce a set of households which are consistent with this forecasted employment. In other words, the SPG1 module determines a set of households with full attributes such that the number of employed persons by industry in those households matches the model-wide employment by industry forecast by the NED module. Unemployed households are also generated, consistent with the initial PUMS weights.
+
+The NED model produces both jobs (employment) and workers (persons), reflecting the mismatch between US Bureau of Economic Analysis job data and Census worker data.NED forecasted jobs are adjusted by fixed factors into workers, accounting for mismatches between industry categories as well as workers working multiple jobs.
+
+Besides total employment by industry category, two other important characteristic of the synthetic population are controlled for in SPG1. One is the distribution of employed persons in households. The distribution of households by number of workers per household is important for the PT module. For this reason, the SPG1 module is further constrained to match the model-wide distribution of workers per household, by year provided in an input file. A second controlled attribute in SPG1 is age distributions. This attribute is important to travel models, as the population ages and travel behavior changes.
+
+At the close of the SPG1 table balancing procedure, the PUMS households have no spatial attributes. This model-wide count of households is input to AA to allocate household activity among zones. Thus, SPG1 operates after the NED module, but before the AA module.
+
+\subsubsection{SPG1 Table balancing procedure: initial conditions}
+The table balancing procedure used by the SPG1 module is described with reference to a simplified test case illustrated in Tables \ref{tab:spg1-balancing-initial} through \ref{tab:spg-after-iteration20}, which only covers one of the two controlled variables, worker per household but not person age. Adding age is equivalent to adding additional columns to the example. Table \ref{tab:spg1-balancing-initial} shows the test case data. The 25 rows in this table represent a sample of household records to be expanded. In the full model application, there are as many rows as there are PUMS records from all the PUMAs covering the model area. The columns in this table include an hh\_weight field, a set of industry fields and a set of household category fields, representing constraints defined for the procedure. The cell values in the hh\_weight field begin as the PUMS household weights and are changed systematically during the balancing procedure. For simplicity, the test case assumes all PUMS household weights have a value of 1.0. In the full model application, each cell value would be multiplied by the PUMS household record weight (i.e., PUMS HOUSWGT field value). The cell value in the constraint fields are dependent on the hh\_weight cell value and thus are also modified by the table balancing procedure. At the end of the procedure, the final values in the hh\_weight field indicate the number of times each sample household record should be replicated in the TM synthetic population. The table balancing procedure is run iteratively, with constraint cell values changing as a result of changes to the hh\_weight values until all constraint field totals match the specified constraints.
+
+\begin{sidewaystable}  % Table 4 1
+\centering
+\caption{Initial household records and constraints for SPG1 matrix balancing procedure}
+\label{tab:spg1-balancing-initial}
+\small
+\begin{tabular}{c*{12}r}
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & & 1 & 1 & & & & & 0 & 0 & 1 & 0 & 0 \\
+\gray 2 & & & & & & & 1 & 0 & 1 & 0 & 0 & 0 \\
+3 & & 2 & & 1 & & & & 0 & 0 & 0 & 1 & 0 \\
+\gray 4 & & & & 1 & & 1 & & 0 & 0 & 1 & 0 & 0 \\
+5 & & & 2 & & & & 1 & 0 & 0 & 0 & 1 & 0 \\
+\gray 6 & & & & & 2 & & 2 & 0 & 0 & 0 & 0 & 1 \\
+7 & & & & & & & & 1 & 0 & 0 & 0 & 0 \\
+\gray 8 & & 1 & & & & & & 0 & 1 & 0 & 0 & 0 \\
+9 & & 1 & & & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 1 \\
+\gray 10 & & & & 1 & & & & 0 & 1 & 0 & 0 & 0 \\
+11 & & & 1 & & 2 & & & 0 & 0 & 0 & 1 & 0 \\
+\gray 12 & & & & & 1 & & 1 & 0 & 0 & 1 & 0 & 0 \\
+13 & & & 1 & 1 & 1 & & 1 & 0 & 0 & 0 & 0 & 1 \\
+\gray 14 & & 1 & 2 & & & & & 0 & 0 & 0 & 1 & 0 \\
+15 & & 1 & & 1 & 1 & & & 0 & 0 & 0 & 1 & 0 \\
+\gray 16 & & & & & & & & 1 & 0 & 0 & 0 & 0 \\
+17 & & & 1 & 1 & & & & 0 & 0 & 1 & 0 & 0 \\
+\gray 18 & & & & & 2 & & & 0 & 0 & 1 & 0 & 0 \\
+19 & & & & & & & 1 & 0 & 1 & 0 & 0 & 0 \\
+\gray 20 & & & & & & & 1 & 0 & 1 & 0 & 0 & 0 \\
+21 & & & & & 1 & & 1 & 0 & 0 & 1 & 0 & 0 \\
+\gray 22 & & 1 & & & & & & 0 & 1 & 0 & 0 & 0 \\
+23 & & & & & & & 1 & 0 & 1 & 0 & 0 & 0 \\
+\gray 24 & & 1 & & & & 1 & & 0 & 0 & 1 & 0 & 0 \\
+25 & & 1 & & 1 & & & & 0 & 0 & 1 & 0 & 0 \\
+\gray  & & 10 & 8 & 7 & 11 & 3 & 11 & 2 & 7 & 8 & 5 & 3 \\
+ & & 0.2 & 0.16 & 0.14 & 0.22 & 0.06 & 0.22 & 0.08 & 0.28 & 0.32 & 0.2 & 0.12 \\
+\hline
+\rowcolor{yellow!10}\multicolumn{8}{l}{Regional total workers by employment category -- employment targets} & \multicolumn{5}{l}{Households by workers per households -- household targets} \\
+\rowcolor{yellow!10} & & 2,150 & 1,800 & 2,800 & 2,200 & 1,950 & 3,000 & 556 & 1,946 & 2,224 & 1,390 & 834 \\
+\rowcolor{yellow!10} & & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.0\% & 28.0\% & 32.0\% & 20.0\% & 12.0\% \\
+\rowcolor{yellow!10} & & & & & & & & & & & &  \\
+\rowcolor{yellow!10} \multicolumn{7}{r}{Total workers =} & 13,900 & \multicolumn{4}{r}{Total households =} & 6,950 \\
+\hline
+\multicolumn{13}{l}{\footnotesize Note: For simplicity, this test case assumes an initial hh\_weight of 1.0 for all households, rather than household-specific PUMS weight.} \\
+\end{tabular}
+\end{sidewaystable}
+
+In Table \ref{tab:spg1-balancing-initial}, the constraints specified for the test case are shown highlighted in yellow. The numbers shown in bold italics font in the lower highlighted area indicate constraints for the SPG1 procedure. The model-wide employment by industry category from the NED module adjusted using jobs-to-worker factors and relative frequencies of the number of workers per household by household category are read as exogenous inputs. Jobs-to-worker factors were required to adjust for multiple jobs per person, absentees and other unspecified differences between NED and SPG data sources. From these absolute worker totals, the relative frequency by industry category is determined. Likewise, from the relative frequencies of households by household category and NED-based workers over all industries, absolute number of model-wide households in each household category can be determined. The equation to calculate total households follows. For the Table \ref{tab:spg1-balancing-initial} test case, the model-wide workers ($\sum W_i$) are constrained to 13,900 workers, leading to a value of 6,950 households (H).
+
+\begin{equation}
+H = \sum_n n \times Share_n / \sum_i W_i
+\end{equation}
+\noindent where:
+\begin{align*}
+n &= \text{number of workers per household (0, 1, 2, 3 or 4)} \\
+i &= \text{index of aggregated industry sector categories} \\
+H &= \text{SPG target for number of model-wide households} \\
+Share_n &= \text{Target share of $n$ worker households of all households (exogenous)} \\
+W_i &= \text{SPG target for number of model-wide workers in industry sector $i$}
+\end{align*}
+
+The starting conditions for the table balancing procedure are illustrated in Table \ref{tab:spg1-balancing-initial}. The household records and their initial constraint field values are determined from the Census PUMS dataset. The starting values of the hh\_weight field would be the PUMS household weights (assumed to be 1 for all households in the test case of Table \ref{tab:spg1-balancing-initial} or could be adjusted by the user). The constraint values come from forecasts of regional employment by category (NED module) and a specified distribution of household attribute values (weighted Census PUMS or STF dataset).
+
+\subsubsection{SPG1 table balancing procedure: first iteration}
+
+An expanded version of the process is shown in Table \ref{tab:spg-after-initial-expansion}, after the hh\_weight cell values are initialized. To do so, an initial hh\_weight expansion factor is calculated as a ratio of the target and sample count of workers by industry, as follows:
+\begin{equation}
+InitFactor = \sum_i W_i / \sum_i SampleW_i
+\end{equation}
+\noindent where:
+\begin{align*}
+i &= \text{index of industry sector categories} \\
+InitFactor &= \text{initial household expansion factor (initial hh\_weight)} \\
+W_i &= \text{target workers by industry $i$} \\
+SampleW_i &= \text{household weight for each PUMS sample worker in industry $i$}
+\end{align*}
+
+\begin{sidewaystable}  % Table 4 2
+\centering
+\caption{SPG table balancing procedure example: after initial hh\_weight expansion factor}
+\label{tab:spg-after-initial-expansion}
+\small
+\begin{tabular}{c*{12}{r}}
+\vspace{-8pt} \\
+\multicolumn{8}{l}{Initial expansion factor = 278} \\
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & 278 & 278 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+\gray 2 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+3 & 278 & 556 & 0 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 \\
+\gray 4 & 278 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 & 278 & 0 & 0 \\
+5 & 278 & 0 & 556 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 278 & 0 \\
+\gray 6 & 278 & 0 & 0 & 0 & 556 & 0 & 556 & 0 & 0 & 0 & 0 & 278 \\
+7 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+\gray 8 & 278 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 \\
+9 & 278 & 278 & 0 & 0 & 278 & 278 & 278 & 0 & 0 & 0 & 0 & 278 \\
+\gray 10 & 278 & 0 & 0 & 278 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 \\
+11 & 278 & 0 & 278 & 0 & 556 & 0 & 0 & 0 & 0 & 0 & 278 & 0 \\
+\gray 12 & 278 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 278 & 0 & 0 \\
+13 & 278 & 0 & 278 & 278 & 278 & 0 & 278 & 0 & 0 & 0 & 0 & 278 \\
+\gray 14 & 278 & 278 & 556 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 \\
+15 & 278 & 278 & 0 & 278 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 \\
+\gray 16 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+17 & 278 & 0 & 278 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+\gray 18 & 278 & 0 & 0 & 0 & 556 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+19 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+\gray 20 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+21 & 278 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 278 & 0 & 0 \\
+\gray 22 & 278 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 \\
+23 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+\gray 24 & 278 & 278 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 278 & 0 & 0 \\
+25 & 278 & 278 & 0 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+\hline
+ &  & 2,780 & 2,224 & 1,946 & 3,058 & 834 & 3,058 & 556 & 1,946 & 2,224 & 1,390 & 834 \\
+ &  & 20.00\% & 16.00\% & 14.00\% & 22.00\% & 6.00\% & 22.00\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+\rowcolor{yellow!10} \cellcolor{white}& \cellcolor{white} & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+ &  &  &  &  &  &  & 13,900 &  &  &  &  & 6,950 \\
+\hline
+\end{tabular}
+\end{sidewaystable}
+
+Applying the expanded initial hh\_weight values to all cells, results in an initial worker and household count estimate in each field cell, as shown in Table \ref{tab:spg-after-initial-expansion} (in the example, InitFactor = 13900/50 = 278). The column sums provide the total workers and total households estimated by category after this initial balancing step. Below the column sums in Table \ref{tab:spg-after-initial-expansion}, the resulting relative distribution of workers and households by category are shown. This can be compared with the highlighted targeted distributions (consistent with those estimated in Table \ref{tab:spg1-balancing-initial}). The difference between the calculated field frequencies and their corresponding target frequencies indicates the amount of adjustment needed by category in order to satisfy all constraints. When this difference is minimal (meets a user-defined target threshold) for all constraints, the table is considered balanced.
+
+In order to attain a balanced table, a series of systematic adjustments must be applied through the course of multiple iterations. In each iteration adjustment factors are calculated for each field constraint in turn. An adjustment factor is calculated as the ratio of the targeted count and most recent sample count for that field, as follows:
+\begin{equation}   % 4.04
+AdjFactor_k = TargetCount_k / \sum_r SampleCount_{k,r}
+\end{equation}
+\noindent where:
+\begin{align*}
+k &= \text{index for constraint field category (industry or household category)} \\
+r &= \text{index for sample household record} \\
+AdjFactor_k &= \text{sample adjustment factor for field $k$} \\
+TargetCount_k &= \text{targeted count for field category $k$} \\
+SampleCount_{k,r} &= \text{sample count in field category $k$ from household record $r$}
+\end{align*} 
+
+The process begins by calculating the adjustment factor for the first field category. This adjustment factor updates the initial hh\_weight values if and only if those households (rows) have non-zero entries in the field being adjusted. Subsequent updates to all field cell values are made and columns summed. After the adjustment factor is calculated and applied, the column sum in that field will match the targeted value (in absolute terms, not relative frequency). 
+
+Continuing our example, an adjustment factor of 0.77 (2150/2780) was calculated for the retail field. The results of applying this adjustment factor are shown in Table \ref{tab:spg-after-retail-iteration1}. All households (rows) in the sample with non-zero retail workers were assigned a hh\_weight of 215 (278*0.77). For example, household 1 has non-zero employed persons in constraint field 1, so its hh\_weight is adjusted, while Household 2 has zero employed persons in constraint field 1, so its hh\_weight is not. These new hh\_weights are then applied to the other fields, leading to modified column sums for each field. Note also that the column sum of constraint field 1 matches the target exactly. The relative frequency and target relative frequency do not match at this point because the total workers estimated by the current set of hh\_weights are too low (12,577 in sample versus 13,900 target).
+
+\begin{sidewaystable}  % Table 4 3
+\centering
+\caption{SPG table balancing procedure example: after iteration 1 adjustment to retail field}
+\label{tab:spg-after-retail-iteration1}
+\small
+\begin{tabular}{c*{12}{r}}
+\vspace{-8pt} \\
+\multicolumn{8}{l}{Balancing factor = 0.773381295} \\
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & 215 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 \\
+\gray 2 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+3 & 215 & 430 & 0 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 \\
+\gray 4 & 278 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 & 278 & 0 & 0 \\
+5 & 278 & 0 & 556 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 278 & 0 \\
+\gray 6 & 278 & 0 & 0 & 0 & 556 & 0 & 556 & 0 & 0 & 0 & 0 & 278 \\
+7 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+\gray 8 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 & 0 \\
+9 & 215 & 215 & 0 & 0 & 215 & 215 & 215 & 0 & 0 & 0 & 0 & 215 \\
+\gray 10 & 278 & 0 & 0 & 278 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 \\
+11 & 278 & 0 & 278 & 0 & 556 & 0 & 0 & 0 & 0 & 0 & 278 & 0 \\
+\gray 12 & 278 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 278 & 0 & 0 \\
+13 & 278 & 0 & 278 & 278 & 278 & 0 & 278 & 0 & 0 & 0 & 0 & 278 \\
+\gray 14 & 215 & 215 & 430 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 \\
+15 & 215 & 215 & 0 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 215 & 0 \\
+\gray 16 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+17 & 278 & 0 & 278 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+\gray 18 & 278 & 0 & 0 & 0 & 556 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+19 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+\gray 20 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+21 & 278 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 278 & 0 & 0 \\
+\gray 22 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 & 0 \\
+23 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+\gray 24 & 215 & 215 & 0 & 0 & 0 & 215 & 0 & 0 & 0 & 215 & 0 & 0 \\
+25 & 215 & 215 & 0 & 215 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 \\
+\hline
+ &  & 2,150 & 2,035 & 1,757 & 2,932 & 708 & 2,995 & 556 & 1,820 & 2,035 & 1,201 & 771 \\
+ &  & 17.09\% & 16.18\% & 13.97\% & 23.31\% & 5.63\% & 23.81\% & 8.71\% & 28.51\% & 31.88\% & 18.82\% & 12.08\% \\
+\rowcolor{yellow!10} \cellcolor{white} & \cellcolor{white} & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+ &  &  &  &  &  &  & 12,577 &  &  &  &  & 6,383 \\
+\hline
+\end{tabular}
+\end{sidewaystable}
+
+At this point, the process is repeated in the same manner for the each field in turn; calculating an adjustment factor, updating the hh\_weight for those household with non-zero cell values in that field, updating the remaining field cells and the associated column sums. The results of making these adjustments to field 2 are shown in Table \ref{tab:spg-after-education-iteration1}. Note that although the column sum for field 2 now matches the target exactly, the column sum of field 1 no longer matches its target, but is still somewhat close.
+
+\begin{sidewaystable}  % Table 4 4
+\centering
+\caption{SPG table balancing procedure example: after iteration 1 adjustment to education field}
+\label{tab:spg-after-education-iteration1}
+\small
+\begin{tabular}{c*{12}{r}}
+\vspace{-8pt} \\
+\multicolumn{8}{l}{Balancing factor = 0.884520885} \\
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & 190.17 & 190.17 & 190.17 & 0 & 0 & 0 & 0 & 0 & 0 & 190.17 & 0 & 0 \\
+\gray 2 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+3 & 215 & 430 & 0 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 \\
+\gray 4 & 278 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 & 278 & 0 & 0 \\
+5 & 245.90 & 0 & 491.79 & 0 & 0 & 0 & 245.90 & 0 & 0 & 0 & 245.90 & 0 \\
+\gray 6 & 278 & 0 & 0 & 0 & 556 & 0 & 556 & 0 & 0 & 0 & 0 & 278 \\
+7 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+\gray 8 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 & 0 \\
+9 & 215 & 215 & 0 & 0 & 215 & 215 & 215 & 0 & 0 & 0 & 0 & 215 \\
+\gray 10 & 278 & 0 & 0 & 278 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 \\
+11 & 245.90 & 0 & 245.90 & 0 & 491.79 & 0 & 0 & 0 & 0 & 0 & 245.90 & 0 \\
+\gray 12 & 278 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 278 & 0 & 0 \\
+13 & 245.90 & 0 & 245.90 & 245.90 & 245.90 & 0 & 245.90 & 0 & 0 & 0 & 0 & 245.90 \\
+\gray 14 & 190.17 & 190.17 & 380.34 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 190.17 & 0 \\
+15 & 215 & 215 & 0 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 215 & 0 \\
+\gray 16 & 278 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+17 & 245.90 & 0 & 245.90 & 245.90 & 0 & 0 & 0 & 0 & 0 & 245.90 & 0 & 0 \\
+\gray 18 & 278 & 0 & 0 & 0 & 556 & 0 & 0 & 0 & 0 & 278 & 0 & 0 \\
+19 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+\gray 20 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+21 & 278 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 278 & 0 & 0 \\
+\gray 22 & 215 & 215 & 0 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 & 0 \\
+23 & 278 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 278 & 0 & 0 & 0 \\
+\gray 24 & 215 & 215 & 0 & 0 & 0 & 215 & 0 & 0 & 0 & 215 & 0 & 0 \\
+25 & 215 & 215 & 0 & 215 & 0 & 0 & 0 & 0 & 0 & 215 & 0 & 0 \\
+\hline
+ &  & 2100.34 & 1800 & 1692.79 & 2835.69 & 708 & 2930.79 & 556 & 1820 & 1978.07 & 1111.97 & 738.90 \\
+ &  & 17.40\% & 14.92\% & 14.03\% & 23.50\% & 5.87\% & 24.29\% & 8.96\% & 29.33\% & 31.88\% & 17.92\% & 11.91\% \\
+\rowcolor{yellow!10} \cellcolor{white} & \cellcolor{white} & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+ &  &  &  &  &  &  & 12067.622 &  &  &  &  & 6204.931 \\
+\hline
+\end{tabular}
+\end{sidewaystable}
+
+Subsequent adjustments are made for each of the industry fields and then each household category field until all fields have been updated. Note that after the last household field, only that field will be guaranteed to match its target, although the other fields should be closer in general than before the adjustments were made and the table will have the correct total expanded workers and total expanded households compared to targets. The adjustment of the last household constraint field signals the end of the first table balancing procedure iteration. The household sample resulting from the first table balancing iteration is shown in Table \ref{tab:spg-after-iteration1}.
+
+\begin{sidewaystable}  % Table 4 5
+\centering
+\caption{SPG table balancing procedure example: after iteration 1}
+\label{tab:spg-after-iteration1}
+\small
+\begin{tabular}{c*{12}{r}}
+\vspace{-8pt} \\
+\multicolumn{8}{l}{Balancing factor = 0.9238079} \\
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & 133.75 & 133.75 & 133.75 & 0 & 0 & 0 & 0 & 0 & 0 & 133.75 & 0 & 0 \\
+\gray 2 & 279.39 & 0 & 0 & 0 & 0 & 0 & 279.39 & 0 & 279.39 & 0 & 0 & 0 \\
+3 & 400.88 & 801.77 & 0 & 400.88 & 0 & 0 & 0 & 0 & 0 & 0 & 400.88 & 0 \\
+\gray 4 & 763.83 & 0 & 0 & 763.83 & 0 & 763.83 & 0 & 0 & 0 & 763.83 & 0 & 0 \\
+5 & 299.23 & 0 & 598.46 & 0 & 0 & 0 & 299.23 & 0 & 0 & 0 & 299.23 & 0 \\
+\gray 6 & 194.42 & 0 & 0 & 0 & 388.84 & 0 & 388.84 & 0 & 0 & 0 & 0 & 194.42 \\
+7 & 278.00 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+\gray 8 & 200.16 & 200.16 & 0 & 0 & 0 & 0 & 0 & 0 & 200.16 & 0 & 0 & 0 \\
+9 & 355.14 & 355.14 & 0 & 0 & 355.14 & 355.14 & 355.14 & 0 & 0 & 0 & 0 & 355.14 \\
+\gray 10 & 428.10 & 0 & 0 & 428.10 & 0 & 0 & 0 & 0 & 428.10 & 0 & 0 & 0 \\
+11 & 194.39 & 0 & 194.39 & 0 & 388.77 & 0 & 0 & 0 & 0 & 0 & 194.39 & 0 \\
+\gray 12 & 148.01 & 0 & 0 & 0 & 148.01 & 0 & 148.01 & 0 & 0 & 148.01 & 0 & 0 \\
+13 & 284.45 & 0 & 284.45 & 284.45 & 284.45 & 0 & 284.45 & 0 & 0 & 0 & 0 & 284.45 \\
+\gray 14 & 214.37 & 214.37 & 428.75 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 214.37 & 0 \\
+15 & 281.13 & 281.13 & 0 & 281.13 & 281.13 & 0 & 0 & 0 & 0 & 0 & 281.13 & 0 \\
+\gray 16 & 278.00 & 0 & 0 & 0 & 0 & 0 & 0 & 278 & 0 & 0 & 0 & 0 \\
+17 & 286.05 & 0 & 286.05 & 286.05 & 0 & 0 & 0 & 0 & 0 & 286.05 & 0 & 0 \\
+\gray 18 & 137.11 & 0 & 0 & 0 & 274.22 & 0 & 0 & 0 & 0 & 137.11 & 0 & 0 \\
+19 & 279.39 & 0 & 0 & 0 & 0 & 0 & 279.39 & 0 & 279.39 & 0 & 0 & 0 \\
+\gray 20 & 279.39 & 0 & 0 & 0 & 0 & 0 & 279.39 & 0 & 279.39 & 0 & 0 & 0 \\
+21 & 148.01 & 0 & 0 & 0 & 148.01 & 0 & 148.01 & 0 & 0 & 148.01 & 0 & 0 \\
+\gray 22 & 200.16 & 200.16 & 0 & 0 & 0 & 0 & 0 & 0 & 200.16 & 0 & 0 & 0 \\
+23 & 279.39 & 0 & 0 & 0 & 0 & 0 & 279.39 & 0 & 279.39 & 0 & 0 & 0 \\
+\gray 24 & 357.14 & 357.14 & 0 & 0 & 0 & 357.14 & 0 & 0 & 0 & 357.14 & 0 & 0 \\
+25 & 250.11 & 250.11 & 0 & 250.11 & 0 & 0 & 0 & 0 & 0 & 250.11 & 0 & 0 \\
+\hline
+ & & 2793.72 & 1925.83 & 2694.54 & 2268.56 & 1476.10 & 2741.24 & 556 & 1946 & 2224 & 1390 & 834 \\
+ & & 20.10\% & 13.85\% & 19.39\% & 16.32\% & 10.62\% & 19.72\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+\rowcolor{yellow!10} \cellcolor{white} & \cellcolor{white} & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+ &  &  &  &  &  &  & 13900 &  &  &  &  & 6950 \\
+\hline
+\end{tabular}
+\end{sidewaystable}
+
+\subsubsection{SPG1 table balancing procedure: subsequent iterations}
+After the end of the first table balancing iteration, a check is performed to determine if any constraint fields differ from their targets. If any differ by more than a user-specified acceptable error, then another iteration of table balancing is performed. The hh\_weights from the previous iteration are adjusted at the beginning of the new iteration, as the new iteration again calculates and applies adjustment factors for each constraint field, as described above. The resulting table after two full table balancing iterations is shown in Table \ref{tab:spg-after-iteration2}, while the results at the end of 20 table balancing iterations are shown in Table \ref{tab:spg-after-iteration20}. 
+
+\begin{sidewaystable}  % Table 4 6
+\centering
+\caption{SPG table balancing procedure example: after iteration 2}
+\label{tab:spg-after-iteration2}
+\small
+\begin{tabular}{c*{12}{r}}
+\vspace{-8pt} \\
+\multicolumn{8}{l}{Balancing factor = 0.869082045} \\
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & 85.91 & 85.91 & 85.91 & 0 & 0 & 0 & 0 & 0 & 0 & 85.91 & 0 & 0 \\
+\gray 2 & 292.55 & 0 & 0 & 0 & 0 & 0 & 292.55 & 0 & 292.55 & 0 & 0 & 0 \\
+3 & 379.55 & 759.10 & 0 & 379.55 & 0 & 0 & 0 & 0 & 0 & 0 & 379.55 & 0 \\
+\gray 4 & 991.83 & 0 & 0 & 991.83 & 0 & 991.83 & 0 & 0 & 0 & 991.83 & 0 & 0 \\
+5 & 349.07 & 0 & 698.14 & 0 & 0 & 0 & 349.07 & 0 & 0 & 0 & 349.07 & 0 \\
+\gray 6 & 181.45 & 0 & 0 & 0 & 362.89 & 0 & 362.89 & 0 & 0 & 0 & 0 & 181.45 \\
+7 & 278.00 & 0 & 0 & 0 & 0 & 0 & 0 & 278.00 & 0 & 0 & 0 & 0 \\
+\gray 8 & 151.04 & 151.04 & 0 & 0 & 0 & 0 & 0 & 0 & 151.04 & 0 & 0 & 0 \\
+9 & 352.32 & 352.32 & 0 & 0 & 352.32 & 352.32 & 352.32 & 0 & 0 & 0 & 0 & 352.32 \\
+\gray 10 & 473.73 & 0 & 0 & 473.73 & 0 & 0 & 0 & 0 & 473.73 & 0 & 0 & 0 \\
+11 & 213.52 & 0 & 213.52 & 0 & 427.04 & 0 & 0 & 0 & 0 & 0 & 213.52 & 0 \\
+\gray 12 & 132.39 & 0 & 0 & 0 & 132.39 & 0 & 132.39 & 0 & 0 & 132.39 & 0 & 0 \\
+13 & 300.23 & 0 & 300.23 & 300.23 & 300.23 & 0 & 300.23 & 0 & 0 & 0 & 0 & 300.23 \\
+\gray 14 & 180.22 & 180.22 & 360.43 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 180.22 & 0 \\
+15 & 267.65 & 267.65 & 0 & 267.65 & 267.65 & 0 & 0 & 0 & 0 & 0 & 267.65 & 0 \\
+\gray 16 & 278.00 & 0 & 0 & 0 & 0 & 0 & 0 & 278.00 & 0 & 0 & 0 & 0 \\
+17 & 269.47 & 0 & 269.47 & 269.47 & 0 & 0 & 0 & 0 & 0 & 269.47 & 0 & 0 \\
+\gray 18 & 114.84 & 0 & 0 & 0 & 229.68 & 0 & 0 & 0 & 0 & 114.84 & 0 & 0 \\
+19 & 292.55 & 0 & 0 & 0 & 0 & 0 & 292.55 & 0 & 292.55 & 0 & 0 & 0 \\
+\gray 20 & 292.55 & 0 & 0 & 0 & 0 & 0 & 292.55 & 0 & 292.55 & 0 & 0 & 0 \\
+21 & 132.39 & 0 & 0 & 0 & 132.39 & 0 & 132.39 & 0 & 0 & 132.39 & 0 & 0 \\
+\gray 22 & 151.04 & 151.04 & 0 & 0 & 0 & 0 & 0 & 0 & 151.04 & 0 & 0 & 0 \\
+23 & 292.55 & 0 & 0 & 0 & 0 & 0 & 292.55 & 0 & 292.55 & 0 & 0 & 0 \\
+\gray 24 & 316.22 & 316.22 & 0 & 0 & 0 & 316.22 & 0 & 0 & 0 & 316.22 & 0 & 0 \\
+25 & 180.94 & 180.94 & 0 & 180.94 & 0 & 0 & 0 & 0 & 0 & 180.94 & 0 & 0 \\
+\hline
+ &  & 2444.44 & 1927.71 & 2863.39 & 2204.59 & 1660.38 & 2799.49 & 556.00 & 1946.00 & 2224.00 & 1390.00 & 834.00 \\
+ &  & 17.59\% & 13.87\% & 20.60\% & 15.86\% & 11.95\% & 20.14\% & 08.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+\rowcolor{yellow!10} \cellcolor{white} & \cellcolor{white} & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 08.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+ &  &  &  &  &  &  & 13900.00 &  &  &  &  & 6950.00 \\
+\hline
+\end{tabular}
+\end{sidewaystable}
+
+\begin{sidewaystable}  % Table 4 7
+\centering
+\caption{SPG table balancing procedure example: after iteration 20}
+\label{tab:spg-after-iteration20}
+\small
+\begin{tabular}{c*{12}{r}}
+\vspace{-8pt} \\
+\multicolumn{8}{l}{Balancing factor = 0.999874192} \\
+\hline
+Household & hh weight & Retail & Educ & Service & Govt & Mfr & Other & 0 worker & 1 worker & 2 workers & 3 workers & 4 workers \\
+\hline
+1 & 41.97 & 41.97 & 41.97 & 0 & 0 & 0 & 0 & 0 & 0 & 41.97 & 0 & 0 \\
+\gray 2 & 325.24 & 0 & 0 & 0 & 0 & 0 & 325.24 & 0 & 325.24 & 0 & 0 & 0 \\
+3 & 340.30 & 680.61 & 0 & 340.30 & 0 & 0 & 0 & 0 & 0 & 0 & 340.30 & 0 \\
+\gray 4 & 1236.52 & 0 & 0 & 1236.52 & 0 & 1236.52 & 0 & 0 & 0 & 1236.52 & 0 & 0 \\
+5 & 419.17 & 0 & 838.34 & 0 & 0 & 0 & 419.17 & 0 & 0 & 0 & 419.17 & 0 \\
+\gray 6 & 174.41 & 0 & 0 & 0 & 348.83 & 0 & 348.83 & 0 & 0 & 0 & 0 & 174.41 \\
+7 & 278.00 & 0 & 0 & 0 & 0 & 0 & 0 & 278.00 & 0 & 0 & 0 & 0 \\
+\gray 8 & 104.79 & 104.79 & 0 & 0 & 0 & 0 & 0 & 0 & 104.79 & 0 & 0 & 0 \\
+9 & 415.86 & 415.86 & 0 & 0 & 415.86 & 415.86 & 415.86 & 0 & 0 & 0 & 0 & 415.86 \\
+\gray 10 & 435.45 & 0 & 0 & 435.45 & 0 & 0 & 0 & 0 & 435.45 & 0 & 0 & 0 \\
+11 & 231.76 & 0 & 231.76 & 0 & 463.52 & 0 & 0 & 0 & 0 & 0 & 231.76 & 0 \\
+\gray 12 & 135.55 & 0 & 0 & 0 & 135.55 & 0 & 135.55 & 0 & 0 & 135.55 & 0 & 0 \\
+13 & 243.73 & 0 & 243.73 & 243.73 & 243.73 & 0 & 243.73 & 0 & 0 & 0 & 0 & 243.73 \\
+\gray 14 & 135.05 & 135.05 & 270.10 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 135.05 & 0 \\
+15 & 263.71 & 263.71 & 0 & 263.71 & 263.71 & 0 & 0 & 0 & 0 & 0 & 263.71 & 0 \\
+\gray 16 & 278.00 & 0 & 0 & 0 & 0 & 0 & 0 & 278.00 & 0 & 0 & 0 & 0 \\
+17 & 174.40 & 0 & 174.40 & 174.40 & 0 & 0 & 0 & 0 & 0 & 174.40 & 0 & 0 \\
+\gray 18 & 96.71 & 0 & 0 & 0 & 193.42 & 0 & 0 & 0 & 0 & 96.71 & 0 & 0 \\
+19 & 325.24 & 0 & 0 & 0 & 0 & 0 & 325.24 & 0 & 325.24 & 0 & 0 & 0 \\
+\gray 20 & 325.24 & 0 & 0 & 0 & 0 & 0 & 325.24 & 0 & 325.24 & 0 & 0 & 0 \\
+21 & 135.55 & 0 & 0 & 0 & 135.55 & 0 & 135.55 & 0 & 0 & 135.55 & 0 & 0 \\
+\gray 22 & 104.79 & 104.79 & 0 & 0 & 0 & 0 & 0 & 0 & 104.79 & 0 & 0 & 0 \\
+23 & 325.24 & 0 & 0 & 0 & 0 & 0 & 325.24 & 0 & 325.24 & 0 & 0 & 0 \\
+\gray 24 & 297.56 & 297.56 & 0 & 0 & 0 & 297.56 & 0 & 0 & 0 & 297.56 & 0 & 0 \\
+25 & 105.75 & 105.75 & 0 & 105.75 & 0 & 0 & 0 & 0 & 0 & 105.75 & 0 & 0 \\
+\hline
+ &  & 2150.09 & 1800.30 & 2799.86 & 2200.17 & 1949.93 & 2999.65 & 556.00 & 1946.00 & 2224.00 & 1390.00 & 834.00 \\
+ &  & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+\rowcolor{yellow!10} \cellcolor{white} & \cellcolor{white} & 15.47\% & 12.95\% & 20.14\% & 15.83\% & 14.03\% & 21.58\% & 8.00\% & 28.00\% & 32.00\% & 20.00\% & 12.00\% \\
+ &  &  &  &  &  &  & 13900.00 &  &  &  &  & 6950.00 \\
+\hline
+\end{tabular}
+\end{sidewaystable}
+
+For the test case being explained here, 20 iterations were required to match targets within the margin of error. The final (20th iteration) hh\_weights resulted in a balanced table. Note that the sample columns sums and target values are very close for every category, as well as the relative frequencies. The adjustment factor applied in the last adjustment step (upper left corner of Table \ref{tab:spg-after-iteration20}) was very close to 1.0, an indicator that subsequent adjustments would be very slight.
+
+These weights, after the final iteration, indicate the number of times each household record should be replicated in the SPG-produced synthetic population. In order to write out the population (consisting of replicated PUMS household records), it is necessary to round the fractional decimal hh\_weight values produced by the table-balancing method to integer values. This is done by simple bucket rounding of the set of hh\_weight values, which avoids significantly affecting the match between the final population's characteristics and the original constraints.\footnote{Bucket rounding, used in many transport models, is a special type of rounding in which the accumulated rounding error of some elements is used to bias the next rounding operation.}
+
+Although not included in the example presented here, SPG1 also controls for age distributions, which would be represented as additional columns. The age distributions are a person-level attribute, not a household attribute, so the control totals would be used against the population to determine weights, which are then adjusted appropriately (based on each individual's source household) to become household weights. The process described above functions the same, only with columns representing the age categories being added to the balancing table.
+
+Because age distributions are controlled at a population level, an accurate value for the total population in the region is needed to correctly develop the control totals. However, as with total households, there is no input into SPG with this value. SPG infers household totals by determining worker totals from NED outputs and applying workers-per-household values which are input into the model. In order to avoid another input into the model (which has to be maintained) and possible inconsistencies which it might introduce, a different tact was used for population totals. (As a note, if SPG controlled against household size distributions, those could be used to infer a population total.)
+
+To generate a population total, SPG1 is run once through without controlling against age distributions, but controlling on employment and workers-per-household categories. The population total from the synthetic population produced by this SPG1 run is then used as the control population total and SPG1 is run again, controlling on employment, workers-per-household and age distributions.
+  
+\subsection{Household Home Zone Assignment (SPG2)}
+The households generated by the SPG1 module contain the correct number of workers based on the jobs forecast from the NED module and are consistent with a distribution of number of workers per household. The SPG1 table balancing procedure ensures that these conditions are met in the generated synthetic population. The SPG1-generated synthetic population, however, have no spatial location.
+
+The SPG2 module assigns a home alpha zone to each household, consistent with the home end of AA-produced labor flows. The SPG2 module runs after the AA module and accepts from the AA module for each alpha zone, the number of households in each household category (based on household income and size, see Table \ref{tab:size-income} on page \pageref{tab:size-income}) located in the zone and the total labor dollar value (\$Labor) by occupation produced by the households in the zone. These values are used to determine the probability of selecting a home alpha zone for each synthetic household from SPG1. For each person in each household:
+\begin{itemize}
+\item Calculate the relative \$Labor for their occupation code and industry code in each alpha zone by dividing the \$Labor for their occupation and industry in the alpha zone by the total regional \$Labor for the occupation and industry over all alpha zones.
+\item Calculate the product of these relative \$Labor over all employed persons in the household for each alpha zone. These products represent the density for choosing the alpha zone.
+\item Convert the alpha zone densities to a cumulative density function with values in the range of 0.0 to 1.0 and select an alpha zone by Monte Carlo selection.
+\item If the total number of households allocated to the selected alpha zone for the household's income and size category does not exceed the total number as determined by AA, then allocate this alpha zone to this synthetic household.
+\item After allocating the alpha zone, decrement: (a) the available \$Labor in the alpha zone for each of the occupation categories of the persons in the household by the \$Labor per job for the corresponding categories; and (b) the available households per alpha zone for the household category.
+\item If the selected alpha zone has already been allocated its full allotment of the specific category of households, repeat the procedure to sample a different alpha zone.
+\item If a household has only unemployed persons, select an alpha zone by using the relative numbers of un-allocated households per alpha zone as sampling densities and make a Monte Carlo selection from the array of cumulative densities. After making the selection, check that the alpha zone is not already full for this household category and if not, adjust the available households per alpha zone and household category.
+\end{itemize}
+
+\noindent When all households from SPG1 have been assigned a home location alpha zone, the synthetic household and person record files with PUMS attributes and alpha zone is written to comma delimited text files, SynPopH.csv and SynPopP.csv. This concludes the SPG module.
+
+\section{Software Implementation}
+The SPG1 table balancing procedure and SPG2 household assignment procedure are implemented in Java code. The implementation of the SPG modules makes use of an array of objects to hold attributes of the household and persons (in the household) relevant to the generation of households (SPG1) and allocation to zones (SPG2) procedures. The array contains unique PUMS household record references, household and person attributes relevant to the balancing procedure and a count of the number of times this PUMS household record appears in the final synthetic population (the integer hh\_weight values determined by SPG1). This array of objects is fundamental to both SPG1 and SPG2. It is saved to disk as a serialized object in SPG1 so that it may be restored and used by procedures in SPG2. Note that the AA module runs after the SPG1 module and before the SPG2 module, thus the necessity to preserve the SPG1 objects in a disk file, to be restored after the AA module runs. Specifically for SPG1, the array maintains a count of the number of times each unique PUMS household appears in the entire synthetic population. This count and the attributes maintained with the household records is used in SPG2 to produce frequency reports of total (model-wide) households and persons by such categories as occupation, industry, age, household income, number of workers per household and size of the household. These summaries provided the basis for validation of the SPG1 module.
+
+The SPG2 module uses the same array of household attribute objects so that the exact same households generated in SPG1 are allocated to zones in SPG2. A set of arrays maintaining: the total allocated and unallocated households by household category by zone; and labor dollars of production by occupation and industry by zone are used as part of the SPG2 procedure. The households in the array of household attribute objects are each selected in random order and allocated to a zone. The constraint on total households by household category by zone is held as a rigid constraint. The proportions of labor dollars by occupation and industry by zone are used as weights in determining the probabilities that a household resides in each zone, but not held as fixed constraints.
+
+The constraint on total households by household category by zone in the SPG2 procedure allowed for a significant performance improvement in the implementation procedure. To do so, PUMS household records are partitioned into groups by the household category to which they belong. Labor dollars produced by occupation and zone are also categorized by household category. The SPG2 procedure to allocate SPG1 households to home zones can therefore be done independently by household category. This separation of computational effort allowed the SPG2 procedure to be implemented in Java as a multi-threaded application. If SPG is run on a computer with multiple cores, then a separate thread for each core is created and set to work on the SPG2 procedure for one household category group of households. The households in more than one category can therefore be assigned zones by concurrently operating threads. In other words, for as many categories as there are processing cores, households can be assigned zones in parallel.
+
+In addition to the generation and allocation procedures in SPG1, software written in Java was developed for reading PUMS data records and extracting the necessary PUMS attributes and also for specifying and writing the full set of desired PUMS household and person (SynPopH.csv and SynPopP.csv) attributes files used by other modules.
+
+A large intermediate binary scratch file [hharray.diskObject] is produced by SPG1 to house the PUMS sample prior to SPG2. This can be deleted when SPG2 is complete.
+
+\section{S1 and S2 Parameters}\label{sec:spg-s1-s2}
+SPG procedures use a fixed set of operations on input files and produce a fixed set of output files. The Census PUMS survey weights and jobs-to-worker parameters used in the SPG table balancing procedure are discussed below, while inputs distributions used as controls are described as inputs in the following section. 
+
+The starting conditions for the SPG1 table balancing procedure include the household records and their initial hh\_weight field values are taken from the 2005-09 ACS PUMS dataset for PUMAs at least partially covered by the model area. Populations are built for the State ofOregon and for selected PUMAs representing the halo counties outside of Oregon in Washington, Idaho, Nevada and California. The starting value of the hh\_weight value is the 2005-09 ACS PUMS household and person weights. 
+
+The pre-specified margin of error for SPG1 table balancing procedure is defined such that that the differences between estimated total employment and target total employment overall employment categories and between total estimated households and target total households by workers per household categories are all less than 1.0.
+
+\section{Inputs and Outputs}
+The inputs and outputs of the SPG module are listed in Tables \ref{tab:spg-inputs} and \ref{tab:spg-outputs}, respectively. SPG1 uses NED model-wide employment by industry and marginals from 1990 PUMS household/person sample list and OEA long-range population forecast. The SPG2 module accepts from AA for each alpha zone, the number of households in each household category (based on household income and size) located in the zone and the total labor dollar value by occupation produced by the households in the zone by household category. SPG1 model-wide sample is temporarily saved while the AA module is run and is then written out with the assigned SPG2 home alpha zone.
+
+\begin{table}  %Table 4 8 SPG Inputs
+\centering
+\caption{SPG inputs}\label{tab:spg-inputs}
+\begin{tabular}{L{2.55in} L{1.9in} c C{0.8in}}
+\hline
+Data element & File & Level & Source \\
+\hline
+Modelwide workers and population by SPG industry & activity\_forecast.csv, population\_forecast.csv$^a$ & SPG1 & NED (exogenous) \\
+\gray 1990 PUMS sample list (with attribute states) of observed households/persons & PUMSAX$ss$.txt, where $ss \in$ [CA, ID, NV, OR, WA] & SPG1 & Exogenous \\
+1990 PUMS data dictionary & pumsusdd.txt & SPG1 & Exogenous \\
+\gray Target worker per household distribution & workersPerHouseholdMarginalxYear.csv & SPG1 & Exogenous \\
+Crosswalk between PUMS and SWIM industry categories & acs\_occupation\_2005\_2009.csv, pums\_to\_split\_industry.csv & SPG1 & Exogenous \\
+\gray Labor production (home end) in 2009 \$ by occupation in alpha zones & laborDollarProduction.csv & SPG2 & AA \\
+Count of households by alpha zone & ActivityLocations2.csv & SPG2 & AA \\
+\gray List of alpha zones by beta zones & alpha2beta.csv & SPG2 & Exogenous \\
+Serialized household array object & hhArray.diskObject & SPG2 & SPG1 \\
+\hline
+\multicolumn{4}{l}{\footnotesize a. Uses oregonPersonsByAgeMarginalxYear.csv if these files are not available.}
+\end{tabular}
+\end{table}
+
+\begin{table}  % Table 4 9 SPG Outputs
+\centering
+\caption{SPG outputs}\label{tab:spg-outputs}
+\begin{tabular}{L{2.6in} L{1.9in} cc}
+\hline
+Data element & Files(s) & Level & Used by \\
+\hline
+Count of modeled households by category in study area & householdsByHHCategory.csv & SPG1 & AA \\
+\gray Serialized Household Array object & hhArray.diskObject & SPG1 & SPG2 \\
+Lists (with attribute states, including home alpha zone) of modeled households and persons resident in study area &  SynPopH.csv, SynPopP.csv & SPG2 & PT \\
+\gray Count of modeled households by state/alpha zone & spg2out\_hh.csv & SPG1 & AA (next year) \\
+\hline
+\end{tabular}
+\end{table}
+
+
+SPG outputs data are used by AA and PT, as shown in Table \ref{tab:spg-outputs}. Model-wide SPG1 outputs are summarized by household income-size categories (Table \ref{tab:size-income} on page \pageref{tab:size-income}) for allocation in the AA module. The SPG2 synthetic population files are augmented and used by the PT module to generate person trips within the model. 
+
+\subsection{User-Defined Marginal Distributions}
+In addition to meeting the NED count of employees by industry (after the adjustments previously noted in \S\ref{sec:spg-s1-s2}), SPG will also meet model-wide distributions of workers per household and persons by age group. The source for these marginal distributions is noted below.
+
+\subsubsection{Workers per Household} 
+The base year distribution of households by workers per household is shown in Table \ref{tab:worker-target}, and stored in the file workersPerHouseholdMarginalxYear.csv. These factors are used as targets in the SPG1 table balancing method. They are based on the weighted 1990 and 2000 PUMS sample for those PUMAs within the full SWIM2 study area. These distributions are determined by the relative frequency of weighted households in those categories from the Census PUMS records. In calibration, it was found that retaining the 1990 Census distribution in all years was inadequate over time. Thus distributions for each year from 1990 to 2000 are provided in the input, interpolating between the 1990 and 2000 census values. These values are held constant in 2000 and all subsequent years.
+
+\begin{table}  % Table 4-10
+\centering
+\caption{Target Worker Per Household Distribution}\label{tab:worker-target}
+\begin{tabular}{crrrr}
+\hline
+Workers/household & 1990 households & 1990 frequency & 2000 households & 2000 frequency \\
+\hline
+0 & 541,147 & 27.5\% & 573,736 & 25.8\% \\
+\gray 1 & 694,928 & 35.4\% & 810,020 & 36.5\% \\
+2 & 610,846 & 31.1\% & 698,343 & 31.5\% \\
+\gray 3 & 96,268 & 4.9\% & 109,910 & 5.0\% \\
+4 & 17,284 & 0.9\% & 22,240 & 1.0\% \\
+\gray 5 & 3,395 & 0.2\% & 4,175 & 0.2\% \\
+6 & 748 & 0.0\% & 830 & 0.0\% \\
+\gray 7 & 196 & 0.0\% & 432 & 0.0\% \\
+8 & 0 & 0.0\% & 118 & 0.0\% \\
+\gray 9 & 35 & 0.0\% & 56 & 0.0\% \\
+10+ & 73 & 0.0\% & 14 & 0.0\% \\
+\hline
+Total & 1,964,920 & 100.0\% & 2,219,874 & 100.0\% \\
+\hline
+\multicolumn{5}{l}{\footnotesize SPG input file: workersPerHouseholdMarginalxYear.csv, source: 1990 and 2000 US Census PUMS data} \\
+\end{tabular}
+\end{table}
+
+\subsubsection{Age Distribution}
+An example base year distribution of households by workers per household is shown in Figure \ref{tab:age_example}. This distribution is used as targets in the SPG1 table balancing method. 
+
+The distribution of persons by age range are determined by NED (population\_forecast.csv), and used to build the file used as a constraint in SPG, [oregonPersonsByAgeMarginalxYear.csv]. An example distribution of person age by year is shown in Table \ref{tab:age_example}. This distribution is used as targets in the SPG1 table balancing method. The nine age groups used in SPG are an aggregation of 18 OEA groups to keep the model manageable while still accommodating the needs of the PT module as well as other ODOT models that will likely use the results (MPO JEMnR, GreenSTEP and DVMT models). NED age distributions are built on the Oregon Office of Economic Analysis(OEA) long range forecasts, and extended to the model area (see Chapter \ref{sec:ned-chapter}).
+
+\begin{table}[!t]  % Table 4-11
+\centering
+\caption{Target age percentages by year}\label{tab:age_example}
+\begin{tabular}{cccccccccc}
+\hline
+ & Age range \\
+Year & 0-4 & 5-18 & 15-19 & 20-24 & 25-29 & 30-54 & 55-64 & 65-74 & 75+ \\
+\hline
+1990 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+\gray 1991 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+1992 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+\gray 1993 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+1994 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+\gray 1995 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+1996 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+\gray 1997 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+1998 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+\gray 1999 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+2000 & 6.58 & 14.03 & 7.14 & 6.72 & 6.77 & 37.04 & 8.92 & 6.38 & 6.42 \\
+\gray 2005 & 6.31 & 13.39 & 6.87 & 6.99 & 6.76 & 35.98 & 11.15 & 6.25 & 6.31 \\
+2010 & 6.31 & 12.60 & 6.70 & 6.76 & 7.11 & 34.55 & 12.91 & 7.09 & 5.97 \\
+\gray 2015 & 6.30 & 12.44 & 6.16 & 6.63 & 6.87 & 33.75 & 13.07 & 8.86 & 5.92 \\
+2020 & 6.20 & 12.50 & 5.96 & 6.10 & 6.74 & 33.39 & 12.27 & 10.32 & 6.51 \\
+\gray 2025 & 6.03 & 12.44 & 6.04 & 5.92 & 6.23 & 33.48 & 11.41 & 10.55 & 7.90 \\
+2030 & 5.89 & 12.23 & 6.08 & 6.03 & 6.07 & 33.19 & 11.07 & 10.05 & 9.39 \\
+\gray 2035 & 5.84 & 11.99 & 6.05 & 6.08 & 6.20 & 32.76 & 11.20 & 9.48 & 10.41 \\
+2040 & 5.84 & 11.83 & 5.93 & 6.06 & 6.27 & 32.14 & 11.71 & 9.29 & 10.93 \\
+\hline
+\multicolumn{10}{l}{SPG input file: [oregonPersonsByAgeMarginalxYear.csv]} \\
+\multicolumn{10}{l}{Source:  July 1, 2010 Oregon OEA long-range population forecast} \\
+\end{tabular}
+\end{table}
+
+\section{Model Validation}
+During validation, SPG1 output were compared with various attributes of the weighted 1990 US Census PUMS distributions used as input for the sample process. SPG2 output were to be compared with geographically specific PUMS data (by PUMA). Additionally, SPG2 were tested to ensure it matched the home location distribution by alpha zone from AA (SPG2 input). The key SPG targets (model-wide for SPG1 and by PUMA for SPG2) for Oregon and the halo, derived from the 2005--09 ACS PUMS data, are:
+\begin{itemize}
+\item Workers by industry-occupation category
+\item Households by number of workers
+\item Persons by age-range category
+\end{itemize}
+
+Initial base year SPG1 results were tabulated and compared with 1990 US Census PUMS attributes by several key variables: occupation, industry, workers per household and household income. The tabulations were made for the entire synthetic population (to test SPG1) and by PUMA (to test SPG2) against the original PUMS data, so that sample biases could be evaluated both by category and geographically. The results show that:
+\begin{itemize}
+\item SPG1 is correctly synthesizing a model-wide population of over 5M persons that matches overall Census PUM distributions in terms of household category (income and size), user-supplied workers per household and age attributes and matches NED regional employment by industry.
+\item SPG2 assignment of home alpha zone to each synthesized household matches the input AA data, per SPG2 design. The AA data input to SPG2 includes the home end labor production dollars by occupation in alpha zones (laborDollarProduction.csv) and Count of households by alpha zone (ActivityLocations2.csv). When AA does not match target labor production by zone (e.g., under-estimation in Oregon with overestimations in the other states),this is reflected in SPG2 log output.
+\end{itemize}
+
+\noindent For the future:
+\begin{itemize}
+\item NED provides total population and counts of unemployed that could be utilized to constrain SPG.  The former would be provided via converting the age distribution to age by population.  The latter would improve historical issues with forecasting zero-worker households by income.
+\item Since SPG is constrained to only match workers, person age and workers per household distribution, mismatches in other attributes may occur (e.g., number of households or persons or bias in the location of large or small households). Additional constraints in SPG or other modules (e.g., reduce non-worker trip rates in PT), could be introduced if warranted.
+\end{itemize}
+
+\section{S3 Parameters}
+When the full SWIM2 model is undergoing calibration, it is anticipated that SPG has no S3 parameters that will be utilized to improve overall model performance.

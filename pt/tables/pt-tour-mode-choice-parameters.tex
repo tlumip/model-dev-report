@@ -1,0 +1,43 @@
+\begin{table}[!t]
+\centering
+\caption{Tour mode choice model parameters}\label{tab:pt-tour-mode-choice-parameters}
+\small
+\begin{tabular}{l *{6}{r}}
+\hline
+Parameter & Work \& college & School & Shop & Recreate & Other & Work-based \\
+\hline
+In-vehicle time & -0.0250 & -0.0172 & -0.0150 & -0.0150 & -0.0150 & -0.0200 \\
+{\vspace{-9pt}} \\
+\textit{Cost (cents)} &  &  &  &  &  &  \\
+\gray ~~~Low income ($<$\$30k) & -1.0400 & -1.0733 & -0.9360 & -0.9360 & -0.9360 & -1.2480 \\
+~~~Med income ($30-$60k) & -0.2600 & -0.2683 & -0.2340 & -0.2340 & -0.2340 & -0.3120 \\
+\gray ~~~High income ($>$\$60k) & -0.1300 & -0.1342 & -0.1170 & -0.1170 & -0.1170 & -0.1560 \\
+{\vspace{-9pt}} \\
+First wait time (2.0) & -0.0500 & -0.0344 & -0.0300 & -0.0300 & -0.0300 & -0.0400 \\
+\gray Transfer wait time (2.5) & -0.0625 & -0.0430 & -0.0375 & -0.0375 & -0.0375 & -0.0500 \\
+Walk time (2.5) & -0.0625 & -0.0430 & -0.0375 & -0.0375 & -0.0375 & -0.0500 \\
+\gray Drive time (2.5) & -0.0625 & -0.0430 & -0.0375 & -0.0375 & -0.0375 & -0.0500 \\
+Walk mode time (3.5) & -0.0875 & -0.0602 & -0.0525 & -0.0525 & -0.0525 & -0.0700 \\
+\gray Bike mode time (4) & -0.1000 & -0.0688 & -0.0600 & -0.0600 & -0.0600 & -0.0800 \\
+{\vspace{-9pt}} \\
+\textit{Value of time} &  &  &  &  &  &  \\
+~~~Low income ($<$\$30k) & 1.4423 & 0.9615 & 0.9615 & 0.9615 & 0.9615 & 0.9615 \\
+\gray ~~~Med income ($30-$60k) & 5.7692 & 3.8462 & 3.8462 & 3.8462 & 3.8462 & 3.8462 \\
+~~~High income ($>$\$60k) & 11.5385 & 7.6923 & 7.6923 & 7.6923 & 7.6923 & 7.6923 \\
+{\vspace{-9pt}} \\
+\textit{Number of stops} &  &  &  &  &  &  \\
+\gray ~~~Passenger & -0.6380 & -0.3843 & -0.0867 & -0.1897 & -0.0867 & \\
+~~~Walk & -1.6196 & -1.7860 & -1.2873 & -1.2962 & -1.2873 & \\
+\gray ~~~Bike & -1.1752 & -1.7846 & -0.7714 & -0.8953 & -0.7714 & \\
+~~~Walk-transit & -0.9393 & -0.9790 & -0.2273 & -0.6367 & -0.2273 & \\
+\gray ~~~Transit-passenger & -0.1724 & -0.2749 & 0.3845 & -1.5006 & 0.3845 & \\
+~~~Passenger-transit & -0.6503 & -0.2749 & 0.1511 & & 0.1511 & \\
+\gray ~~~Drive-transit & -2.1832 & & & & & \\
+{\vspace{-9pt}} \\
+Passenger, hhsize=1 & -0.7148 & & -1.1303 & -1.1917 & -1.1303 & \\
+\gray Passenger, hhsize=2 & & 0.8440 & & & & \\
+Passenger, hhsize=3 & & 1.4159 & & & & \\
+\gray Nesting coefficient & 0.7659 & 0.7659 & 0.7659 & 0.7659 & 0.7659 & 0.7659 \\
+\hline
+\end{tabular}
+\end{table}

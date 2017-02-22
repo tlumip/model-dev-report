@@ -1,0 +1,46 @@
+\begin{sidewaystable}
+\centering
+\caption{AA module inputs}\label{tab:aa-inputs}
+\begin{tabular}{L{4.5in}L{2.75in}L{1.1in}}
+\hline
+Data element & File(s) & Source \\
+\hline
+
+Modelwide total production quantity of activity $a$ ($TW_a$), modified by AA p-processor & ActivityTotalsI.csv, ActivityTotalsW.csv & NED (industry \$), SPG1 (HHs) \\
+
+\gray Total production quantity of activity by alpha zone in the 2009 base year ($TW_{a,z}$), used to set zonal constants in constrainted AA run & ActivityConstraintsI.csv & Exogenous \\
+
+Quantities of total floorspace inventory by alpha zone & FloorspaceI.csv & ALD \\
+
+\gray Increments of total floorspace change in past year by alpha zone & Increments.csv & ALD \\
+
+Fixed constant-production rate agricultural and forest lands by zone & AgForestFloorspace.csv (used only in AA, adds FloorspaceI.csv resource land sqft) & Exogenous \\
+
+\gray Mode choice composite utility for commodity $c$ between beta zones $k$ and $z$ ($MSLogSum_{c,k,z}$) & **mcls\_beta.zmx & PT \\
+
+Auto and commercial vehicle times and distances traveled by commodity $c$ between beta zones $k$ and $z$ ($Time_{c,k,z}$, $Dist_{c,k,z}$) & betapk***dist.zip, betapk***time.zip, worldZoneDistances.csv & VISUM \\
+
+\gray Proportion of modelwide quantity of production activity $a$ in zone $z$ in the prior year ($PrevW_{a,z}$) & ActivityLocations.csv & Prev year AA \\
+
+Unit prices for commodities by beta zones ($Price_{c,k}$) & ExchangeResults.csv (prior), ExchangeResultsI.csv (current) & Prev year AA \\
+
+\gray Production size terms by zone $z$ and activity $a$ ($Size_{a,z}$) & ActivitySizeTermsI.csv & Exogenous \\
+
+Aggregate activities definitions/parameters & ActivitiesI.csv & Exogenous \\
+
+\gray Commodity definitions/parameters and transportation-based cost coefficients & CommoditiesI.csv & Exogenous \\
+
+Floorspace constants & FloorspaceSupplyI.csv & Exogenous \\
+
+\gray Industry technology options and related commodity make and use coefficients & TechnologyOptionsI.csv & Exogenous \\
+
+Import/export function coefficients by beta zone & ExchangeImportExportI.csv & Exogenous \\
+
+\gray List of alpha zones and beta zones & alpha2beta.csv, processed into FloorspaceZonesI.csv and PECASZonesI.csv & Exogenous \\
+
+Index numbers used to identify activities and commodities in ZonalMakeUse.csv (only if stringsInZonalMakeUse is set to false in properties file) & ActivityNumbers.csv, CommodityNumbers.csv & Exogenous \\
+
+\gray Trip length/time distribution input (optional) & HistogramsI.csv & Exogenous \\
+\hline
+\end{tabular}
+\end{sidewaystable}

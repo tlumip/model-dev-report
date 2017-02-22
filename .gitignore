@@ -1,0 +1,11 @@
+# Ignore all of the intermediate and work files created by the LaTeX compiler
+# Note that these are the files created by TeXShop running under macOS; if a
+# different compiler is used this list might need to be updated
+*.aux
+*.bbl
+*.blg
+*.log
+*.log
+*.lot
+*.synctex.gz
+*.toc

@@ -1,0 +1,28 @@
+\documentclass[letter,11pt]{book}
+\usepackage[papersize={17in, 11in}, margin=1in]{geometry}
+\usepackage{mathptmx}
+\usepackage{longtable}
+\usepackage[table]{xcolor}
+\usepackage{afterpage}
+
+% Longtable inexplicably has a four-inch caption width by default, which we need to change
+\setlength{\LTcapwidth}{6.25in}
+% Define shading for alternating table rows
+\newcommand{\gray}{\rowcolor[gray]{.95}}
+
+\begin{document}
+\fontsize{12}{14.5}\rm
+
+% Manually define where this table will go in the document (chpater, section, page)
+\setcounter{page}{131}
+\setcounter{chapter}{5}
+\chapter{Activity Allocation (AA) Module}
+\setcounter{section}{4}
+\section{S1 and S2 Module Parameters}
+
+% Insert longtable definition for Table 6-8 here, adjusting arraystretch to force to fit on two pages
+\renewcommand{\arraystretch}{0.96}
+\afterpage{\input{aa-transport-coefficients-longtable.tex}}
+
+If we had text for an accompanying paragraph it would go here.
+\end{document}

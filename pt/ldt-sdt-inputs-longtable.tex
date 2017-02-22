@@ -1,0 +1,43 @@
+
+\begin{longtable}{lll}  % {L{3.0in} L{2.5in l}  % 7 45
+\caption{LDT and SDT inputs}\\
+\hline
+Data element & File(s) & Source \\ \hline
+\endfirsthead
+\hline
+Data element & File(s) & Source \\ \hline
+\endhead
+\hline \multicolumn{3}{r}{\emph{Continued on next page}}
+\endfoot
+\hline
+\endlastfoot\label{tab:ldt-sdt-inputs}
+Lists (with attribute states) of modeled households resident in study area & SynPopH & SPG \\
+\gray Lists (with attribute states) of modeled persons resident in study area & SynPopP & SPG \\
+Peak and off-peak auto times and distances for interchanges between alpha zones, peak and off-peak walk-to/drive-to transit travel attributes & \*.zmx (see Table \ref{10-7} for filename coding) & TS \\
+\gray Labor production (home end) and consumption (work end) 2009\$ by occupation in alpha zone & laborDollarProductionSum.csv, laborDollarConsumptionSum.csv &	AA \\
+Labor selling flows by industry (work trip ends) & selling\_commodity.csv & AA \\
+\gray Solved beta zone industry-commodity production and consumption technical coefficients & ZonalMakeUse.csv & AA \\
+Alpha zone acres and beta zones in alpha zones alpha2beta.csv &	Exogenous \\
+\gray Unit parking costs (work/nonwork) in alpha zones & alpha2beta.csv: fields ``HourPark'' and ``DayPark'' & Exogenous \\
+Size term for LDT destination choice model & ExternalStationVolumes.csv & Exogenous \\
+\gray SDT HH survey observed activity patterns & weekdaypatterns.csv, patternAttributes.csv & Exogenous \\
+SDT auto ownership model parameters & autoownershipparameters.csv, globalTemplate.properties (latter from distance and time parameters) & Exogenous \\
+\gray SDT day pattern model parameters & weekdaypatternparameters.csv, patternparameters.csv & Exogenous \\
+SDT intermediate stop purpose model parameters & stoppurpose2tparameters.csv, stoppurpose3ptparameters.csv & Exogenous \\
+\gray SDT primary tour scheduling model parameters & TourScheduleParameters.csv & Exogenous \\
+Tour mode choice model parameters & tourmodeparameters.csv & Exogenous \\
+\gray SDT primary tour destination parameters & tourdestinationparameters.csv & Exogenous \\
+SDT intermediate stop model parameters & IntermediateStopChoiceParameters.csv, stopdestinationparameters.csv, firststopdestinationparameters.csv, secondstopdestiatinoparameters.csv & Exogenous \\
+\gray SDT trip mode choice model parameters & tripmodeparameters.csv & Exogenous \\
+SDT intermediate stop duration model parameters & stopDurationParameters.csv & Exogenous \\
+\gray SDT work-based trip duration model parameters & PctWorkBasedDuration.csv & Exogenous \\
+LDT binary choice of travel model parameters & LDTourBinaryChoiceParameters.csv & Exogenous \\
+\gray LDT tour pattern model parameters & LDPatternModelFrequencies.csv & Exogenous \\
+LDT scheduling model parameters & LDTourScheduleFrequencies.csv, DTourScheduleParameters.csv & Exogenous \\
+\gray LDT internal-external choice model parameters & LDInternalExternalParameters.csv, LDExternalDestinationChoiceParameters.csv & Exogenous \\
+LDT destination choice model parameters & LDExternalDestinationFrequencies.csv, LDInternalDestinationChoiceParameters.csv & Exogenous \\
+\gray LDT mode choice model parameters & LDInternalModeChoiceParameters.csv, LDExternalModeChoiceParameters.csv, LDExternalModeShares.csv & Exogenous \\
+LDT other inputs (rental car/taxi/airport parking costs, multi-day trip duration and auto occupancy by purpose) & globalTemplate.properties & Exogenous \\
+\gray SDT cost inputs (walk, bike and drive to transit speeds, auto operating cost, time of first wait segment, non-work parking cost factor) & globalTemplate.properties & Exogenous \\
+\end{longtable}
+

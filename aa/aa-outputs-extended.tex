@@ -1,0 +1,44 @@
+\begin{sidewaystable}
+\centering
+\caption{AA module outputs}\label{tab:aa-outputs}
+\begin{tabular}{L{4.25in}L{2.5in}L{1.5in}}
+\hline
+Data element & File(s) & User(s) \\
+\hline
+AA Working files (see above) & & AA \\
+\gray Internal commodity dollar flows (goods, services, labor) between beta zones & buying\_commodity.zipMatrix, selling\_commodity.zipMatrix & PT (selling labor), CT (goods) \\
+
+Labor dollar production by occupation and household category and consumption by occupation and industry expanded to alpha zones & TAZDetailedMake.csv, TAZDetailedUse.csv & SPG2 (production) \\
+
+\gray Labor dollar production and consumption by occupation category expanded to alpha zones & laborDollarProductionSum.csv, laborDollarConsumptionSum.csv, FloorspaceZoneTotalMakeUse.csv & PT \\
+
+Activity quantities and composite utilities for beta and alpha zones & ActivityLocations.csv, ActivityLocations2.csv & SPG2 (alpha), Next yr AA (beta) \\
+
+\gray Occupied quantities and unit prices for floorspace in beta zones & ExchangeResults.csv & Next yr ALD \\
+
+Import/export quantities of commodities (\$ flows) to beta zones & ExchangeResults.csv & CT diagnostics \\
+
+\gray Commodity quantities make and use by alpha zone & FloorspaceZoneTotalMakeUse.csv, FloorspaceZoneTotalMakeUse.bin & CT (future) \\
+
+Modelwide composite utilities of production by activity & ActivitySummary.csv & Next yr NED (future) \\
+
+\gray Solved beta zone industry-commodity production and consumption technical coefficients & ZonalMakeUse.csv & Diagnostics \\
+
+Commodity beta zone composite utilities & CommodityZUtilities.csv & Diagnostics \\
+
+\gray Trip length distribution histogram output & Histograms.csv & Diagnostics \\
+
+Summary totals from ZonalMakeUse.csv & MakeUse.csv & CT, diagnostics \\
+
+\gray Summary totals from ExchangeResults.csv & ExchangeResultsTotals.csv & Diagnostics \\
+
+Outcome of technology choice by each activity in each beta zone & TechnologyChoice.csv & Diagnostics \\
+
+\gray Amount of flow that is intrazonal & PctIntrazonalxCommodityxBzone.csv & Diagnostics, calibration of short trips \\
+
+Relative importance of commodity random utility error term for each activity, for buying & ProductionErrorTermSizes.csv & Diagnostics, advanced calibration \\
+
+\gray Relative importance of commodity random utility error term for each activity, for selling & ProductionErrorTermSizes.csv & Diagnostics, advanced calibration \\
+\hline
+\end{tabular}
+\end{sidewaystable}

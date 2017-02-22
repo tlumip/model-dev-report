@@ -1,0 +1,58 @@
+\begin{table}
+\centering
+\caption{Assumed network travel conditions by commodity}
+\label{tab:assumed-network-conditions}
+\small
+\begin{tabular}{ll}
+\hline
+Commodity & Travel skim(s) \\
+\hline
+\rowcolor{orange!20}\multicolumn{2}{l}{\textit{Goods commodities}} \\
+All SCTG goods commodities & betapktrk1time, betapktrk1dist, betapktrk1toll \\
+\rowcolor{orange!20}\multicolumn{2}{l}{\textit{Occupation Labor Commodities}} \\
+A1-Mgmt Bus & w7mcls\_beta \\
+\gray B1-Prof Specialty & w7mcls\_beta \\
+B2-Education & w4mcls\_beta \\
+\gray B3-Health & w7mcls\_beta \\
+B4-Technical Unskilled & w1mcls\_beta \\
+\gray C1-Sales Clerical Professionals & w4mcls\_beta \\
+C2-Sales Service & w4mcls\_beta \\
+\gray C3-Clerical & w4mcls\_beta \\
+C4-Sales Clerical Unskilled & w1mcls\_beta \\
+\gray D1-Production Specialists & w4mcls\_beta \\
+D2-MaintConstRepair Specialists & w4mcls\_beta \\
+\gray D3-ProtectTrans Specialists & w4mcls\_beta \\
+D4-Blue Collar Unskilled & w1mcls\_beta \\
+\gray A1-Mgmt Bus & w7mcls\_beta \\
+\rowcolor{orange!20}\multicolumn{2}{l}{\textit{Service Commodities}} \\
+Retail Trade & s4mcls\_beta \\
+\gray Transport & betapkautotime, betapkautodist, beetapkautotoll \\
+Wholesale Trade & betapkautotime, betapkautodist, beetapkautotoll \\
+\gray Construction & betapkautotime, betapkautodist, beetapkautotoll \\
+Communications and Utilities & betapkautotime, betapkautodist, beetapkautotoll \\
+\gray Accommodations & betapkautotime, betapkautodist, beetapkautotoll \\
+Personal and Other Services and Amusements & b5mcls\_beta \\
+\gray Entertainment Services & b5mcls\_beta \\
+Food Services & b5mcls\_beta \\
+\gray Teaching K12 & c4mcls\_beta \\
+Higher Education & c4mcls\_beta \\
+\gray Health Services & o4mcls\_beta \\
+Fire Business and Professional Services & betapkautotime, betapkautodist, beetapkautotoll \\
+\gray Government Administration & b4mcls\_beta \\
+Internal Services (all types) & b8mcls\_beta \\
+\hline
+{\footnotesize where:} \\
+\multicolumn{2}{l}{\footnotesize Peak period (7-9AM) auto network distance between beta zones [betapkdist.zip]} \\
+\multicolumn{2}{l}{\footnotesize Peak period (7-9AM) auto network travel time between beta zones [betapktime.zip]} \\
+\multicolumn{2}{l}{\footnotesize Peak period (7-9AM) auto network travel time between beta zones [betapktime.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Work trips, $<$\$15K income, number of autos=0 [w1betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Work trips, \$15-30K income, number of autos $<$ household size [w4betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Work trips, $>$\$30K income, number of autos<household size [w7betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Work-based trips, \$15-30K income, number of autos $<$ household size [b4betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Work-based trips, \$15-30K income, number of autos $\ge$ household size [b5betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Work-based trips, $>$\$30K income, number of autos $\ge$ household size [b8betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for School trips, \$15-30K income, number of autos $<$ household size [c4betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Shopping trips, \$15-30K income, number of autos$<$household size [s4betals.zip]} \\
+\multicolumn{2}{l}{\footnotesize Mode choice logsum for Other trips, \$15-30K income, number of autos$<$household size [o4betals.zip]} \\
+\end{tabular}
+\end{table}

@@ -1,0 +1,62 @@
+% This table is so long and difficult to squeeze to single page that we'll break it into three separate
+% tables
+\begin{table}  % Table 7-45
+\centering
+\caption{PT model inputs}\label{tab:pt-generic-inputs}
+\begin{tabular}{L{3.2in} L{2.1in} l}
+\hline
+Data element & File(s) & Source \\
+\hline
+Lists (with attribute states) of modeled households resident in study area & SynPopH & SPG \\
+\gray Lists (with attribute states) of modeled persons resident in study area & SynPopP & SPG \\
+Peak and off-peak auto times and distances for interchanges between alpha zones, peak and off-peak walk-to/drive-to transit travel attributes & \*.zmx & VISUM \\
+\gray Labor production (home end) and consumption (work end) 2009\$ by occupation in alpha zone & laborDollarProductionSum.csv, laborDollarConsumptionSum.csv & AA \\
+Labor selling flows by industry (work trip ends) & selling\_commodity.csv & AA \\
+\gray Solved beta zone industry-commodity production and consumption technical coefficients & ZonalMakeUse.csv & AA \\
+Alpha zone acres and beta zones in alpha zones & alpha2beta.csv &	Exogenous \\
+\gray Unit parking costs (work/nonwork) in alpha zones & alpha2beta.csv: fields ``HourPark'' and ``DayPark'' & Exogenous \\
+Size term for LDT destination choice model & ExternalStationVolumes.csv & Exogenous \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!t]
+\centering
+\caption{SDT-specific model inputs}\label{tab:sdt-specific-inputs}
+\begin{tabular}{L{2.85in} L{2.45in} l}
+\hline
+Data element & File(s) & Source \\
+\hline
+SDT HH survey observed activity patterns & weekdaypatterns.csv, patternAttributes.csv & Exogenous \\
+\gray SDT auto ownership model parameters & autoownershipparameters.csv, globalTemplate.properties (latter from distance and time parameters) & Exogenous \\
+SDT day pattern model parameters & weekdaypatternparameters.csv, patternparameters.csv & Exogenous \\
+\gray SDT intermediate stop purpose model parameters & stoppurpose2tparameters.csv, stoppurpose3ptparameters.csv & Exogenous \\
+SDT primary tour scheduling model parameters & TourScheduleParameters.csv & Exogenous \\
+\gray Tour mode choice model parameters & tourmodeparameters.csv & Exogenous \\
+SDT primary tour destination parameters & tourdestinationparameters.csv & Exogenous \\
+\gray SDT intermediate stop model parameters & IntermediateStopChoiceParameters.csv, stopdestinationparameters.csv, firststopdestinationparameters.csv, secondstopdestiatinoparameters.csv & Exogenous \\
+SDT trip mode choice model parameters & tripmodeparameters.csv & Exogenous \\
+\gray SDT intermediate stop duration model parameters & stopDurationParameters.csv & Exogenous \\
+SDT work-based trip duration model parameters & PctWorkBasedDuration.csv & Exogenous \\
+\gray SDT cost inputs (walk, bike and drive to transit speeds, auto operating cost, time of first wait segment, non-work parking cost factor) & globalTemplate.properties & Exogenous \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}
+\centering
+\caption{LDT-specific model inputs}\label{tab:ldt-specific-inputs}
+\begin{tabular}{L{2.55in} L{2.8in} l}
+\hline
+Data element & File(s) & Source \\
+\hline
+LDT binary choice of travel model parameters & LDTourBinaryChoiceParameters.csv & Exogenous \\
+\gray LDT tour pattern model parameters & LDPatternModelFrequencies.csv & Exogenous \\
+LDT scheduling model parameters & LDTourScheduleFrequencies.csv, DTourScheduleParameters.csv & Exogenous \\
+\gray LDT internal-external choice model parameters & LDInternalExternalParameters.csv, LDExternalDestinationChoiceParameters.csv & Exogenous \\
+LDT destination choice model parameters & LDExternalDestinationFrequencies.csv, LDInternalDestinationChoiceParameters.csv & Exogenous \\
+\gray LDT mode choice model parameters & LDInternalModeChoiceParameters.csv, LDExternalModeChoiceParameters.csv, LDExternalModeShares.csv & Exogenous \\
+LDT other inputs (rental car/taxi/airport parking costs, multi-day trip duration and auto occupancy by purpose) & globalTemplate.properties & Exogenous \\
+\hline
+\end{tabular}
+\end{table}	
